@@ -15,4 +15,4 @@ misc.o: misc.c
 	$(CC) $(CFLAGS) -c misc.c
 
 clean:
-	rm *.o ordenaproc
+	rm *.o ordenaproc ordenahilo ordena

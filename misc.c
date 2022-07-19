@@ -18,6 +18,9 @@
 #include <sys/stat.h>
 #include "misc.h"
 
+#define READ_END 0
+#define WRITE_END 1
+
 /**
  * Función que determina si un archivo es un directorio.
  * 
@@ -69,7 +72,7 @@ int is_txt_file(char *path) {
  * Retorno:
  *      0 si todo fue correcto, -1 si hubo un error durante la ejecución.
  */
-int traverse_dir(char* path) {
+int traverse_dir(char *path, int *ord_lec, int **lec_ord) {
     DIR* dir;
     struct dirent* ent;
 
@@ -100,7 +103,7 @@ int traverse_dir(char* path) {
 
             if (is_dir) {
                 /* Si es un directorio, se sigue recorriendo recursivamente */
-                if (traverse_dir(new_path) == -1) {
+                if (traverse_dir(new_path, ord_lec, lec_ord) == -1) {
                     free(new_path);
                     continue;
                 }
@@ -114,7 +117,19 @@ int traverse_dir(char* path) {
 
                 /* Si es un archivo txt */
                 if (is_reg && is_txt_file(new_path)) {
+                    
+                    int n, m;
+
                     printf("%s\n", new_path);
+
+                    /* Lee que ordenador le asignaron */
+                    read(ord_lec[READ_END], &n, sizeof(int));
+
+                    /* Escribe en la pipe el tamaño y nombre del archivo */
+                    m = strlen(new_path);
+                    write(lec_ord[n][WRITE_END], &m, sizeof(int));
+                    write(lec_ord[n][WRITE_END], new_path, m + 1);
+                    
                 }
             }
         }
@@ -150,4 +165,77 @@ int verify_arguments(int argc, char **argv) {
     }
 
     return 0;
+}
+
+/**
+ * Función que ordena los enteros de un archivo con selection sort.
+ * Parámetros:
+ *      path: ruta del archivo.
+ * Retorno:
+ *      Array de enteros ordenados.
+ */
+int64_t *file_selection_sort(char *path, int *n) {
+    int64_t *array = NULL, aux;
+    int i, j;
+    int size = 0;
+    
+    FILE *file = fopen(path, "r");
+    if (file == NULL) {
+        fprintf(stderr, "No se pudo abrir el archivo %s\n", path);
+        return NULL;
+    }
+
+    /* Se lee el archivo y se guardan los enteros en un array */
+    while (fscanf(file, "%ld", &aux) != EOF) {
+        array = realloc(array, sizeof(int64_t) * (size + 1));
+        array[size] = aux;
+        size++;
+    }
+    fclose(file);
+    
+    /* Se ordena el array con Selection Sort */
+    for (i = 0; i < size - 1; i++) {
+        for (j = i + 1; j < size; j++) {
+            if (array[i] > array[j]) {
+                aux = array[i];
+                array[i] = array[j];
+                array[j] = aux;
+            }
+        }
+    }
+
+    *n = size;
+
+    return array;
+}
+
+/**
+ * Función que mezcla dos secuencias ya ordenadas.
+ */
+int64_t *mezclar_sec(int64_t *secuencia1, int size1, int64_t *secuencia2, int size2, int *size) {
+    int i, j, k;
+    int64_t *secuencia_mezclada;
+    int size_mezclada = size1 + size2;
+    secuencia_mezclada = malloc(size_mezclada * sizeof(int64_t));
+    
+    for (i = 0, j = 0, k = 0; i < size_mezclada; i++) {
+        if (j < size1 && k < size2) {
+            if (secuencia1[j] < secuencia2[k]) {
+                secuencia_mezclada[i] = secuencia1[j];
+                j++;
+            } else {
+                secuencia_mezclada[i] = secuencia2[k];
+                k++;
+            }
+        } else if (j < size1) {
+            secuencia_mezclada[i] = secuencia1[j];
+            j++;
+        } else {
+            secuencia_mezclada[i] = secuencia2[k];
+            k++;
+        }
+    }
+    *size = size_mezclada;
+
+    return secuencia_mezclada;
 }
