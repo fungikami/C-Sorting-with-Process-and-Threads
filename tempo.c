@@ -57,7 +57,7 @@ int lector(int num_ordenadores, int num_mezcladores, char *raiz, char *archivo_s
             close(ord_lec[READ_END]);
 
             /* Ejecución de ordenadores */
-            while (1) {
+            for (;;) {
                 int file_to_order, r, w;
 
                 /* Lee el archivo que le asignó el Lector */

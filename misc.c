@@ -253,7 +253,7 @@ int write_sequence(int num_secuencias, int64_t **secuencias, int *tam_secuencias
     }
     
     /* Escribe en la salida, viendo el menor de todas las secuencias sucesivamente */
-    while (1) {
+    for (;;) {
         int i, to_break = 1;
         int64_t min = 9223372036854775807;
         int min_index = 0;
@@ -275,7 +275,7 @@ int write_sequence(int num_secuencias, int64_t **secuencias, int *tam_secuencias
         fprintf(f, "%ld\n", min);
         index[min_index]++;
     }
-
+    free(index);
     fclose(f);
     return 0;
 }
