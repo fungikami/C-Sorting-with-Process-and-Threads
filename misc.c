@@ -209,7 +209,7 @@ int64_t *file_selection_sort(char *path, int *n) {
 /**
  * Función que mezcla dos secuencias ya ordenadas.
  */
-int64_t *mezclar_sec(int64_t *secuencia1, int size1, int64_t *secuencia2, int size2, int *size) {
+int64_t *merge_sequence(int64_t *secuencia1, int size1, int64_t *secuencia2, int size2, int *size) {
     int i, j, k;
     int64_t *secuencia_mezclada;
     int size_mezclada = size1 + size2;
@@ -242,7 +242,7 @@ int64_t *mezclar_sec(int64_t *secuencia1, int size1, int64_t *secuencia2, int si
  * los elementos de las secuencias en orden.
  * 
  */
-int escribe_secuencia(int num_secuencias, int64_t **secuencias, int *tam_secuencias, char *salida) {
+int write_sequence(int num_secuencias, int64_t **secuencias, int *tam_secuencias, char *salida) {
     FILE *f = fopen(salida, "w");
     int i, *index = malloc(num_secuencias * sizeof(int));
     for (i = 0; i < num_secuencias; i++) index[i] = 0;

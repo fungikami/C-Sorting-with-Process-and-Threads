@@ -208,7 +208,7 @@ void mezclador(
                 if (r == 0) break;
 
                 printf("Mezclador %d mezclando %d\n", i, n);
-                
+
                 /* Lee los números de la secuencia */
                 secuencia_ordenada = malloc(n * sizeof(int64_t));
                 for (j = 0; j < n; j++) {
@@ -218,7 +218,7 @@ void mezclador(
                 }
 
                 /* Mezcla la secuencia con la secuencia ordenada */
-                secuencia = mezclar_sec(secuencia, size, secuencia_ordenada, n, &size);
+                secuencia = merge_sequence(secuencia, size, secuencia_ordenada, n, &size);
             }
 
             close(mezc_ord[WRITE_END]);
@@ -299,7 +299,7 @@ void escritor(
             n++;
         }
         /* Escribe ordenado salida */
-        escribe_secuencia(num_mez, secuencias, tam_secuencias, salida);
+        write_sequence(num_mez, secuencias, tam_secuencias, salida);
         printf("A punto de morir\n");
         exit(0);
     }
