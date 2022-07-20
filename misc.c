@@ -115,12 +115,9 @@ int traverse_dir(char *path, int *ord_lec, int **lec_ord) {
                     continue;
                 }
 
-                /* Si es un archivo txt */
+                /* Si es un archivo txt, se le asigna a un ordenador */
                 if (is_reg && is_txt_file(new_path)) {
-                    
                     int n, m;
-
-                    printf("%s\n", new_path);
 
                     /* Lee que ordenador le asignaron */
                     read(ord_lec[READ_END], &n, sizeof(int));
@@ -238,4 +235,47 @@ int64_t *mezclar_sec(int64_t *secuencia1, int size1, int64_t *secuencia2, int si
     *size = size_mezclada;
 
     return secuencia_mezclada;
+}
+
+/**
+ * Función que recibe un arreglo de arreglo de secuencias y escribe en el archivo de salida
+ * los elementos de las secuencias en orden.
+ * 
+ */
+int escribe_secuencia(int num_secuencias, int64_t **secuencias, int *tam_secuencias, char *salida) {
+    FILE *f = fopen(salida, "w");
+    int i, *index = malloc(num_secuencias * sizeof(int));
+    for (i = 0; i < num_secuencias; i++) index[i] = 0;
+
+    if (f == NULL) {
+        printf("Error al abrir el archivo de salida\n");
+        return -1;
+    }
+    
+    /* Escribe en la salida, viendo el menor de todas las secuencias sucesivamente */
+    while (1) {
+        int i, to_break = 1;
+        int64_t min = 9223372036854775807;
+        int min_index = 0;
+
+        for (i = 0; i < num_secuencias; i++) {
+            if (index[i] < tam_secuencias[i]) {
+                to_break = 0;
+            }
+        }
+
+        if (to_break) break;
+
+        for (i = 0; i < num_secuencias; i++) {
+            if (index[i] < tam_secuencias[i] && (secuencias[i][index[i]] < min)) {
+                min = secuencias[i][index[i]];
+                min_index = i;
+            }
+        }
+        fprintf(f, "%ld\n", min);
+        index[min_index]++;
+    }
+
+    fclose(f);
+    return 0;
 }
