@@ -9,7 +9,4 @@
     #define __ORDENAPROC_H__
 
     int lector(char *raiz, int num_ord, int num_mez, char *salida);
-    void ordenador(int num_ord, int num_mez, int *ord_lec, int **lec_ord, int *mezc_ord, int **ord_mezc);
-    void mezclador(int num_ord, int num_mez, int *ord_lec, int **lec_ord, int *mezc_ord, int **ord_mezc, int **mezc_esc);
-    void escritor(int num_ord, int num_mez, int *ord_lec, int **lec_ord, int *mezc_ord, int **ord_mezc, int *lec_esc, int **mezc_esc, char *salida);
 #endif
