@@ -3,14 +3,18 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/wait.h>
+#include <dirent.h>
 #include "misc.h"
+#include "sequence.h"
 #include "ordenaproc.h"
 
 #define READ_END 0
 #define WRITE_END 1
 
+int traverse_dir(char *path, int *ord_lec, int **lec_ord);
+
 /**
- * Función que implementa el proceso Lector. Se engarga de:
+ * Función que implementa el proceso Lector. Se encarga de:
  * - Crear los procesos/hilos restantes.
  * - Inicializar los mecanismos de comunicación necesarios.
  * - Encontrar los archivos con extensión txt.
@@ -109,7 +113,6 @@ int lector(char *raiz, int num_ord, int num_mez, char *salida) {
     free(ord_mezc);
     free(mezc_esc);
 
-    printf("Terminó el lector\n");
     return 0;
 }
 
@@ -140,7 +143,7 @@ void ordenador(
             for (;;) {
                 char *filename;
                 int n, r, w, mezc, size;
-                int64_t *secuencia;
+                sequence_t *sequence;
 
                 /* Encola el ordenador como disponible */
                 w = write(free_ord[WRITE_END], &i, sizeof(int));
@@ -155,17 +158,21 @@ void ordenador(
 
                 /* Ordena los números del archivo */
                 printf("Ordenador %d ordenando %s\n", i, filename);
-                secuencia = file_selection_sort(filename, &size);
+                sequence = file_selection_sort(filename);
                 free(filename);
 
                 /* Toma un mezclador disponible */
                 r = read(free_mezc[READ_END], &mezc, sizeof(int));
 
                 /* Encola el tamaño y la secuencia */
+                size = sequence->size;
                 write(ord_mezc[mezc][WRITE_END], &size, sizeof(int));
-                for (j=0; j<size; j++) {
-                    write(ord_mezc[mezc][WRITE_END], &secuencia[j], sizeof(int64_t));
+                for (j = 0; j < size; j++) {
+                    write(ord_mezc[mezc][WRITE_END], &sequence->data[j], sizeof(int64_t));
                 }
+
+                /* Libera la memoria de la secuencia */
+                free_sequence(sequence);
             }
 
             /* Cierra los extremos de los pipes utilizados de ordenador-mezclador */
@@ -189,10 +196,10 @@ void mezclador(
 
     for (i=0; i<num_mez; i++) {
         if ((pid = fork()) == 0) {
-            int j, size = 0;
+            int j, size;
 
             /* Inicializa la secuencia vacía */
-            int64_t *secuencia = NULL;
+            sequence_t *sequence = create_sequence(0);
 
             /* Cierra los pipes de lector-ordenador */
             close(free_ord[READ_END]);
@@ -217,7 +224,7 @@ void mezclador(
 
             for (;;) {
                 int n, r;
-                int64_t *secuencia_ordenada, *secuencia_mezclada;
+                sequence_t *ord_seq, *mez_seq;
 
                 /* Encolar mezclador como disponible */
                 write(free_mezc[WRITE_END], &i, sizeof(int));
@@ -229,26 +236,27 @@ void mezclador(
                 printf("Mezclador %d mezclando %d\n", i, n);
 
                 /* Lee los números de la secuencia */
-                secuencia_ordenada = malloc(n * sizeof(int64_t));
+                ord_seq = create_sequence(n);
                 for (j = 0; j < n; j++) {
                     int64_t m;
                     read(ord_mezc[i][READ_END], &m, sizeof(int64_t));
-                    secuencia_ordenada[j] = m;
+                    ord_seq->data[j] = m;
                 }
 
                 /* Mezcla la secuencia con la secuencia ordenada */
-                secuencia_mezclada = merge_sequence(secuencia, size, secuencia_ordenada, n, &size);
-                free(secuencia);
-                free(secuencia_ordenada);
-                secuencia = secuencia_mezclada;
+                mez_seq = merge_sequence(sequence, ord_seq);
+                free_sequence(sequence);
+                free_sequence(ord_seq);
+                sequence = mez_seq;
             }
 
             close(free_mezc[WRITE_END]);
 
             /* Pasa la secuencia al escritor */
+            size = sequence->size;
             write(mezc_esc[i][WRITE_END], &size, sizeof(int));
             for (j = 0; j < size; j++) {
-                write(mezc_esc[i][WRITE_END], &secuencia[j], sizeof(int64_t));
+                write(mezc_esc[i][WRITE_END], &sequence->data[j], sizeof(int64_t));
             }
 
             printf("Mezclador %d terminado\n", i);
@@ -271,9 +279,8 @@ void escritor(
     if ((pid = fork()) == 0) {
         int j, n = 0;
 
-        /* Arreglo de arreglo de secuencias y tamaños */
-        int64_t **secuencias = malloc(num_mez * sizeof(int64_t *));
-        int *tam_secuencias = malloc(num_mez * sizeof(int));
+        /* Arreglo de las secuencias de cada mezclador */
+        sequence_t **secuencias = malloc(num_mez * sizeof(sequence_t *));
 
         /* Cierra los pipes de lector-ordenador */
         close(free_ord[READ_END]);
@@ -302,36 +309,109 @@ void escritor(
             /* Lee el mezclador asignado */
             read(lec_esc[READ_END], &mezc, sizeof(int));
             printf("Al escritor %d le dieron mezclador %d\n", n, mezc);
-            
+
             /* Lee el tamaño de la secuencia */
             read(mezc_esc[mezc][READ_END], &size, sizeof(int));
-            tam_secuencias[mezc] = size;
+            secuencias[mezc] = create_sequence(size);
 
             /* Lee la secuencia */
-            secuencias[mezc] = malloc(size * sizeof(int64_t));
             for (j = 0; j < size; j++) {
-                read(mezc_esc[mezc][READ_END], &secuencias[mezc][j], sizeof(int64_t));
+                read(mezc_esc[mezc][READ_END], &secuencias[mezc]->data[j], sizeof(int64_t));
             }
 
             /* Imprime la secuencia */
             printf("Escritor escribiendo secuencia de %d elementos\n", size);
-            for (j=0; j<size; j++) {
-                printf("%ld  ", secuencias[mezc][j]);
+            for (j = 0; j < size; j++) {
+                printf("%ld  ", secuencias[mezc]->data[j]);
             }
 
             n++;
         }
         /* Escribe ordenado salida */
-        write_sequence(num_mez, secuencias, tam_secuencias, salida);
+        write_sequence(secuencias, num_mez, salida);
 
         /* Libera memoria */
-        for (j=0; j<num_mez; j++) free(secuencias[j]);
+        for (j=0; j<num_mez; j++) free_sequence(secuencias[j]);
         free(secuencias);
-        free(tam_secuencias);
         printf("A punto de morir\n");
         exit(0);
     } else if (pid < 0) {
         perror("Error al crear proceso de escritor\n");
         exit(1);
     }
+}
+
+/**
+ * Función que recorre recursivamente desde un directorio dado y ejecuta una función indicada.
+ * 
+ * Parámetros:
+ *      fun: función a ejecutar por cada archivo.
+ *      args: argumentos de la función.
+ *      action: indica si la función a ejecutar es para un directorio y/o un archivo
+ *          (0 si es para regulares, 1 si es para directorios, 2 si es para ambos casos)
+ * Retorno:
+ *      0 si todo fue correcto, -1 si hubo un error durante la ejecución.
+ */
+int traverse_dir(char *path, int *ord_lec, int **lec_ord) {
+    DIR* dir;
+    struct dirent* ent;
+
+    /* Verifica que existe el directorio */
+    if (!(dir = opendir(path))) {
+        fprintf(stderr, "Error al abrir el directorio %s\n", path);
+        return -1;
+    } 
+    
+    /* Recorre el contenido del directorio */
+    while ((ent = readdir(dir))) {
+        char* e_name = ent->d_name;
+        int dots = strcmp(e_name, ".") == 0 || strcmp(e_name, "..") == 0;
+
+        /* Concatena la nueva direccion */
+        char* new_path = malloc(sizeof(char) * (strlen(path) + strlen(e_name) + 2));
+        strcpy(new_path, path);
+        strcat(new_path, "/");
+        strcat(new_path, e_name);
+
+        /* Se revisa el contenido del archivo, evitando aquellos que terminen en '.' o '..' */
+        if (!dots) {
+            int is_dir = is_dir_file(new_path);
+            if (is_dir == -1) {
+                free(new_path);
+                continue;
+            }
+
+            if (is_dir) {
+                /* Si es un directorio, se sigue recorriendo recursivamente */
+                if (traverse_dir(new_path, ord_lec, lec_ord) == -1) {
+                    free(new_path);
+                    continue;
+                }
+            } else {
+                /* Si es un archivo regular, se revisa si es txt */
+                int is_reg = is_reg_file(new_path);
+                if (is_reg == -1) {
+                    free(new_path);
+                    continue;
+                }
+
+                /* Si es un archivo txt, se le asigna a un ordenador */
+                if (is_reg && is_txt_file(new_path)) {
+                    int n, m;
+
+                    /* Lee que ordenador le asignaron */
+                    read(ord_lec[READ_END], &n, sizeof(int));
+
+                    /* Escribe en la pipe el tamaño y nombre del archivo */
+                    m = strlen(new_path);
+                    write(lec_ord[n][WRITE_END], &m, sizeof(int));
+                    write(lec_ord[n][WRITE_END], new_path, m + 1);
+                    
+                }
+            }
+        }
+        free(new_path);
+    }
+    closedir(dir);
+    return 0;
 }

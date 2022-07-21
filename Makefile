@@ -3,16 +3,17 @@ CFLAGS = -ansi -Wall -pedantic
 
 all: ejecutable
 
-ejecutable: main.o misc.o ordenaproc.o
-	$(CC) $(CFLAGS) -o ordenaproc main.o misc.o ordenaproc.o
-	$(CC) $(CFLAGS) -o ordenahilo main.o misc.o ordenaproc.o
-	$(CC) $(CFLAGS) -o ordena main.o misc.o ordenaproc.o
+ejecutable: main.o misc.o ordenaproc.o sequence.o
+	$(CC) $(CFLAGS) -o ordenaproc main.o misc.o ordenaproc.o sequence.o
 
 main.o: main.c
 	$(CC) $(CFLAGS) -c main.c
 
 ordenaproc.o: ordenaproc.c
 	$(CC) $(CFLAGS) -c ordenaproc.c
+
+sequence.o: sequence.c
+	$(CC) $(CFLAGS) -c sequence.c
 
 misc.o: misc.c
 	$(CC) $(CFLAGS) -c misc.c
