@@ -14,9 +14,10 @@
         int size;
     } sequence_t;
 
-    sequence_t *create_sequence(int size);
-    sequence_t *file_selection_sort(char *path);
-    sequence_t *merge_sequence(sequence_t *sequence1, sequence_t *sequence2);
     void free_sequence(sequence_t *sequence);
+    void selection_sort(sequence_t *sequence);
+    sequence_t *create_sequence(int size);
+    sequence_t *extract_sequence(char *path);
+    sequence_t *merge_sequence(sequence_t *sequence1, sequence_t *sequence2);
     int write_sequence(sequence_t **sequences, int num_seq, char *path);
 #endif

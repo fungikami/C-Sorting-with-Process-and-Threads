@@ -1,3 +1,10 @@
+/**
+ * ordenahilo.c
+ * 
+ * Autor: Ka Fung (18-10492)
+ * Fecha: 28/07/2022 
+ */
+
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -7,4 +14,5 @@
 
 #define READ_END 0
 #define WRITE_END 1
+
 

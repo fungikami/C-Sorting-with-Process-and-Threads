@@ -1,3 +1,10 @@
+/**
+ * ordenaproc.c
+ * 
+ * Autor: Ka Fung (18-10492)
+ * Fecha: 28/07/2022 
+ */
+
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -103,7 +110,7 @@ int lector(char *raiz, int num_ord, int num_mez, char *salida) {
 
     for (i = 0; i < num_mez + num_ord + 1; i++) wait(NULL);
 
-    /* Libera memoria */
+    /* Libera memoria asignada de los pipes */
     for (i = 0; i < num_ord; i++) free(lec_ord[i]);
     for (i = 0; i < num_mez; i++) {
         free(ord_mezc[i]);
@@ -158,7 +165,8 @@ void ordenador(
 
                 /* Ordena los números del archivo */
                 printf("Ordenador %d ordenando %s\n", i, filename);
-                sequence = file_selection_sort(filename);
+                sequence = extract_sequence(filename);
+                selection_sort(sequence);
                 free(filename);
 
                 /* Toma un mezclador disponible */

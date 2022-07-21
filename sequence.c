@@ -1,3 +1,10 @@
+/**
+ * sequence.c
+ *
+ * Autor: Ka Fung (18-10492)
+ * Fecha: 28/07/2022 
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include "sequence.h"
@@ -20,29 +27,46 @@ sequence_t *create_sequence(int size) {
 }
 
 /**
- * Función que ordena los enteros de un archivo con selection sort y
- * guarda el resultado en una estructura sequence_t.
+ * Función que extrae los números de un archivo y los guarda en una secuencia.
  * Parámetros:
- *      path: ruta del archivo con los enteros.
+ * 		- filename: nombre del archivo.
  * Retorno:
- *      NULL en caso de error, en cambio, la secuencia de enteros ordenados.
+ * 		- NULL en caso de error, en cambio, apuntador de la secuencia.
  */
-sequence_t *file_selection_sort(char *path) {
+sequence_t *extract_sequence(char *filename) {
     sequence_t *sequence;
-    int64_t *array = NULL, aux;
-    int i, j, size = 0;
-    
-    FILE *file = fopen(path, "r");
+    int64_t aux, *array = NULL;
+    int size = 0;
+
+    FILE *file = fopen(filename, "r");
     if (file == NULL) return NULL;
 
     /* Se lee el archivo y se guardan los enteros en un arreglo */
     while (fscanf(file, "%ld", &aux) != EOF) {
         array = realloc(array, sizeof(int64_t) * (size + 1));
+        /* if (array == NULL) return NULL; */
         array[size] = aux;
         size++;
     }
     fclose(file);
-    
+
+    /* Se crea la secuencia */
+    sequence = malloc(sizeof(sequence_t));
+    if (sequence == NULL) return NULL;
+    sequence->size = size;
+    sequence->data = array;
+    return sequence;
+}
+
+/**
+ * Función que ordena los enteros de una secuencia con Selection Sort.
+ * Parámetros:
+ *      - sequence: apuntador de la secuencia.
+ */
+void selection_sort(sequence_t *sequence) {
+    int64_t aux, *array = sequence->data;
+    int i, j, size = sequence->size;
+        
     /* Se ordena la secuencia con Selection Sort */
     for (i = 0; i < size - 1; i++) {
         for (j = i + 1; j < size; j++) {
@@ -53,13 +77,6 @@ sequence_t *file_selection_sort(char *path) {
             }
         }
     }
-
-    /* Crea la estructura sequence y lo retorna */
-    sequence = malloc(sizeof(sequence_t));
-    sequence->data = array;
-    sequence->size = size;
-
-    return sequence;
 }
 
 /**
