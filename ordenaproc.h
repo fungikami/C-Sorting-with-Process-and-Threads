@@ -8,5 +8,5 @@
 #ifndef __ORDENAPROC_H__
     #define __ORDENAPROC_H__
 
-    int lector(char *raiz, int num_ord, int num_mez, char *salida);
+    int lector(char *raiz, int num_ord, int num_mezc, char *salida);
 #endif
