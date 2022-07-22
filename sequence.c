@@ -91,32 +91,32 @@ void selection_sort(sequence_t *sequence) {
 sequence_t *merge_sequence(sequence_t *sequence1, sequence_t *sequence2) {
     int i, j, k;
     int size1 = sequence1->size, size2 = sequence2->size;
-    int size_mezclada = size1 + size2;
-    int64_t *secuencia1 = sequence1->data, *secuencia2 = sequence2->data;
+    int size = size1 + size2;
+    int64_t *seq1 = sequence1->data, *seq2 = sequence2->data;
 
     /* Crea la nueva secuencia */
-    sequence_t *sequence = create_sequence(size_mezclada);
+    sequence_t *sequence = create_sequence(size);
     if (sequence == NULL) return NULL;
 
     /* Mezcla las secuencias */
-    for (i = 0, j = 0, k = 0; i < size_mezclada; i++) {
+    for (i = 0, j = 0, k = 0; i < size; i++) {
 
         /* Si ambas secuencias no están vacías, revisa cuál de los dos tiene el menor */
         if (j < size1 && k < size2) {
-            if (secuencia1[j] < secuencia2[k]) {
-                sequence->data[i] = secuencia1[j];
+            if (seq1[j] < seq2[k]) {
+                sequence->data[i] = seq1[j];
                 j++;
             } else {
-                sequence->data[i] = secuencia2[k];
+                sequence->data[i] = seq2[k];
                 k++;
             }
         } else if (j < size1) {
-            /* Si la secuencia 1 no está vacía, se copia el elemento */
-            sequence->data[i] = secuencia1[j];
+            /* Si la secuencia 2 ya está vacía, se copia el resto de la 1 */
+            sequence->data[i] = seq1[j];
             j++;
         } else {
-            /* Si la secuencia 2 no está vacía, se copia el elemento */
-            sequence->data[i] = secuencia2[k];
+            /* Si la secuencia 1 ya está vacía, se copia el resto de la 2 */
+            sequence->data[i] = seq2[k];
             k++;
         }
     }
@@ -152,7 +152,7 @@ int write_sequence(sequence_t **sequences, int num_seq, char *path) {
         int64_t min = 9223372036854775807;
 
         /* Verifica si todas las secuencias ya fueron escritas */
-        if (index_total == 0) break;
+        if (!index_total) break;
 
         /* Busca el menor entero entre las secuencias */
         for (i = 0; i < num_seq; i++) {
