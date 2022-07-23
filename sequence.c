@@ -18,11 +18,11 @@
  */
 sequence_t *create_sequence(int size) {
     sequence_t *sequence = (sequence_t *)malloc(sizeof(sequence_t));
-    if (sequence == NULL) return NULL;
+    if (!sequence) return NULL;
 
     sequence->size = size;
     sequence->data = (int64_t *)malloc(sizeof(int64_t) * size);
-    if (sequence->data == NULL) return NULL;
+    if (!(sequence->data)) return NULL;
     return sequence;
 }
 
@@ -39,12 +39,12 @@ sequence_t *extract_sequence(char *filename) {
     int size = 0;
 
     FILE *file = fopen(filename, "r");
-    if (file == NULL) return NULL;
+    if (!file) return NULL;
 
     /* Se lee el archivo y se guardan los enteros en un arreglo */
     while (fscanf(file, "%ld", &aux) != EOF) {
         array = realloc(array, sizeof(int64_t) * (size + 1));
-        /* if (array == NULL) return NULL; */
+        if (!array) return NULL;
         array[size] = aux;
         size++;
     }
@@ -52,7 +52,7 @@ sequence_t *extract_sequence(char *filename) {
 
     /* Se crea la secuencia */
     sequence = malloc(sizeof(sequence_t));
-    if (sequence == NULL) return NULL;
+    if (!sequence) return NULL;
     sequence->size = size;
     sequence->data = array;
     return sequence;
@@ -96,28 +96,23 @@ sequence_t *merge_sequence(sequence_t *sequence1, sequence_t *sequence2) {
 
     /* Crea la nueva secuencia */
     sequence_t *sequence = create_sequence(size);
-    if (sequence == NULL) return NULL;
+    if (!sequence) return NULL;
 
     /* Mezcla las secuencias */
     for (i = 0, j = 0, k = 0; i < size; i++) {
-
         /* Si ambas secuencias no están vacías, revisa cuál de los dos tiene el menor */
         if (j < size1 && k < size2) {
             if (seq1[j] < seq2[k]) {
-                sequence->data[i] = seq1[j];
-                j++;
+                sequence->data[i] = seq1[j++];
             } else {
-                sequence->data[i] = seq2[k];
-                k++;
+                sequence->data[i] = seq2[k++];
             }
         } else if (j < size1) {
             /* Si la secuencia 2 ya está vacía, se copia el resto de la 1 */
-            sequence->data[i] = seq1[j];
-            j++;
+            sequence->data[i] = seq1[j++];
         } else {
             /* Si la secuencia 1 ya está vacía, se copia el resto de la 2 */
-            sequence->data[i] = seq2[k];
-            k++;
+            sequence->data[i] = seq2[k++];
         }
     }
 
@@ -146,8 +141,8 @@ int write_sequence(sequence_t **sequences, int num_seq, char *path) {
     for (i = 0; i < num_seq; i++) index_total += sequences[i]->size;
     
     /* Escribe en la salida, viendo el menor de los enteros de las secuencias */
-    if ((f = fopen(path, "w")) == NULL) return -1;
-    for (;;) {
+    if (!(f = fopen(path, "w"))) return -1;
+    while (1) {
         int i, min_index = 0;
         int64_t min = 9223372036854775807;
 
@@ -185,7 +180,15 @@ int write_sequence(sequence_t **sequences, int num_seq, char *path) {
  * 		- sequence: apuntador a la secuencia. 
  */
 void free_sequence(sequence_t *sequence) {
-    if (sequence == NULL) return;
+    if (!sequence) return;
     free(sequence->data);
     free(sequence);
+}
+
+void print_sequence(sequence_t *sequence) {
+    int i;
+    for (i = 0; i < sequence->size; i++) {
+        printf("%ld ", sequence->data[i]);
+    }
+    printf("\n");
 }

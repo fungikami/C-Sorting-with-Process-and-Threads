@@ -1,6 +1,5 @@
 /**
  * misc.c
- * Misceláneo
  * Implementación de diversas funciones que se harán uso durante el programa.
  * 
  * Autor: Ka Fung (18-10492)
@@ -50,11 +49,11 @@ int is_reg_file(char *path) {
  * Parámetros:
  *      path: ruta del archivo.
  * Retorno:
- *      No nulo si es un archivo de texto, NULL en caso contrario.
+ *      0 si no es un archivo de texto, distinto de 0 en caso contrario.
  */
 int is_txt_file(char *path) {
     char *ext = strrchr(path, '.');
-    if (ext == NULL) return 0;
+    if (!ext) return 0;
     return strcmp(ext, ".txt") == 0;
 }
 

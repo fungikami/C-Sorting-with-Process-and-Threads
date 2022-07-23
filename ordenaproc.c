@@ -6,24 +6,39 @@
  */
 
 #include <stdio.h>
-#include <string.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 #include <sys/wait.h>
 #include <dirent.h>
 #include "misc.h"
 #include "sequence.h"
 #include "pipe_utils.h"
-#include "ordenaproc.h"
 #include "ordenaproc_child.h"
 
 #define READ_END 0
 #define WRITE_END 1
 
-void free_multiple_pipes(int **array_pipe, int size);
-void close_multiple_pipes(int **array_pipe, int size, int not_close);
-int **initialize_multiple_pipes(int size);
+int lector(char *raiz, int num_ord, int num_mezc, char *salida);
 int traverse_dir(char *path, int *ord_lec, int **lec_ord);
+
+int main(int argc, char *argv[]) {
+    int num_ord, num_mezc;
+    char *raiz, *salida;
+
+    /* Verifica los argumentos */
+    if (verify_arguments(argc, argv) == -1) return -1;
+
+    num_ord = atoi(argv[1]);
+    num_mezc = atoi(argv[2]);
+    raiz = argv[3];
+    salida = argv[4];
+
+    /* Invoca al lector */
+    if (lector(raiz, num_ord, num_mezc, salida) == -1) return -1;
+
+    return 0;
+}
 
 /**
  * Función que implementa el proceso Lector. 
@@ -78,7 +93,7 @@ int lector(char *raiz, int num_ord, int num_mezc, char *salida) {
     /* Recorre el directorio raíz y asigna los archivos a ordenadores */
     traverse_dir(raiz, ords, lec_ord);
 
-    /* Cierra los extremos de los pipes utilizados de lector-ordenador */
+    /* Cierra extremo escritura de lector-ordenador (no archivos que asignar) */
     for (i = 0; i < num_ord; i++) {
         int ord;
         read(ords[READ_END], &ord, sizeof(int));
@@ -121,8 +136,8 @@ int lector(char *raiz, int num_ord, int num_mezc, char *salida) {
  *      0 si todo fue correcto, -1 si hubo un error durante la ejecución.
  */
 int traverse_dir(char *path, int *ords, int **lec_ord) {
-    DIR* dir;
-    struct dirent* ent;
+    DIR *dir;
+    struct dirent *ent;
 
     /* Verifica que existe el directorio */
     if (!(dir = opendir(path))) {
@@ -133,7 +148,7 @@ int traverse_dir(char *path, int *ords, int **lec_ord) {
     /* Recorre el contenido del directorio */
     while ((ent = readdir(dir))) {
         char* e_name = ent->d_name;
-        int dots = strcmp(e_name, ".") == 0 || strcmp(e_name, "..") == 0;
+        int is_dir, dots = (strcmp(e_name, ".") == 0 || strcmp(e_name, "..") == 0);
 
         /* Concatena la nueva direccion */
         char* new_path = malloc(sizeof(char) * (strlen(path) + strlen(e_name) + 2));
@@ -142,45 +157,47 @@ int traverse_dir(char *path, int *ords, int **lec_ord) {
         strcat(new_path, e_name);
 
         /* Se revisa el contenido del archivo, evitando aquellos que terminen en '.' o '..' */
-        if (!dots) {
-            int is_dir = is_dir_file(new_path);
-            if (is_dir == -1) {
+        if (dots) {
+            free(new_path);
+            continue;
+        }
+
+        if ((is_dir = is_dir_file(new_path)) == -1) {
+            free(new_path);
+            continue;
+        }
+
+        if (is_dir) {
+            /* Si es un directorio, se sigue recorriendo recursivamente */
+            if (traverse_dir(new_path, ords, lec_ord) == -1) {
+                free(new_path);
+                continue;
+            }
+        } else {
+            /* Si es un archivo regular, se revisa si es txt */
+            int is_reg = is_reg_file(new_path);
+            if (is_reg == -1) {
                 free(new_path);
                 continue;
             }
 
-            if (is_dir) {
-                /* Si es un directorio, se sigue recorriendo recursivamente */
-                if (traverse_dir(new_path, ords, lec_ord) == -1) {
-                    free(new_path);
-                    continue;
-                }
-            } else {
-                /* Si es un archivo regular, se revisa si es txt */
-                int is_reg = is_reg_file(new_path);
-                if (is_reg == -1) {
+            /* Si es un archivo txt, se le asigna a un ordenador */
+            if (is_reg && is_txt_file(new_path)) {
+                int ord, size, aux;
+
+                /* Lee que ordenador le asignaron */
+                if ((aux = read(ords[READ_END], &ord, sizeof(int))) == -1) {
                     free(new_path);
                     continue;
                 }
 
-                /* Si es un archivo txt, se le asigna a un ordenador */
-                if (is_reg && is_txt_file(new_path)) {
-                    int ord, size, aux;
-
-                    /* Lee que ordenador le asignaron */
-                    if ((aux = read(ords[READ_END], &ord, sizeof(int))) == -1) {
-                        free(new_path);
-                        continue;
-                    }
-
-                    /* Escribe en la pipe el tamaño y nombre del archivo */
-                    size = strlen(new_path) + 1;
-                    if (((aux = write(lec_ord[ord][WRITE_END], &size, sizeof(int))) == -1) ||
-                        (size != write(lec_ord[ord][WRITE_END], new_path, size))
-                    ) {
-                        free(new_path);
-                        continue;
-                    }
+                /* Escribe en la pipe el tamaño y nombre del archivo */
+                size = strlen(new_path) + 1;
+                if (((aux = write(lec_ord[ord][WRITE_END], &size, sizeof(int))) == -1) ||
+                    (size != write(lec_ord[ord][WRITE_END], new_path, size))
+                ) {
+                    free(new_path);
+                    continue;
                 }
             }
         }

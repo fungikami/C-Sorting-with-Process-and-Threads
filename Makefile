@@ -1,13 +1,16 @@
 CC = gcc
 CFLAGS = -ansi -Wall -pedantic
 
-all: ejecutable
+all: ordenaproc ordenahilo ordena
 
-ejecutable: main.o misc.o sequence.o ordenaproc.o ordenaproc_child.c pipe_utils.o
-	$(CC) $(CFLAGS) -o ordenaproc main.o misc.o sequence.o ordenaproc.o ordenaproc_child.c pipe_utils.o
+ordenaproc: ordenaproc.o ordenaproc_child.c pipe_utils.o sequence.o misc.o
+	$(CC) $(CFLAGS) -o ordenaproc ordenaproc.o ordenaproc_child.c pipe_utils.o sequence.o misc.o
 
-main.o: main.c
-	$(CC) $(CFLAGS) -c main.c
+ordenahilo: ordenahilo.o misc.o
+	$(CC) $(CFLAGS) -o ordenahilo ordenahilo.o misc.o
+
+ordena: ordena.o sequence.o misc.o
+	$(CC) $(CFLAGS) -o ordena ordena.o sequence.o misc.o
 
 ordenaproc.o: ordenaproc.c
 	$(CC) $(CFLAGS) -c ordenaproc.c
@@ -17,6 +20,12 @@ ordenaproc_child.o: ordenaproc_child.c
 
 pipe_utils.o: pipe_utils.c
 	$(CC) $(CFLAGS) -c pipe_utils.c
+
+ordenahilo.o: ordenahilo.c
+	$(CC) $(CFLAGS) -c ordenahilo.c
+
+ordena.o: ordena.c
+	$(CC) $(CFLAGS) -c ordena.c
 
 sequence.o: sequence.c
 	$(CC) $(CFLAGS) -c sequence.c

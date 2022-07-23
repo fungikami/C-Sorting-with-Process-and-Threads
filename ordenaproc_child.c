@@ -7,8 +7,8 @@
  */
 
 #include <stdio.h>
-#include <string.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 #include "sequence.h"
 #include "pipe_utils.h"
@@ -18,7 +18,7 @@
 
 void ordena(int pos_ord, int num_ord, int ords, int lec_ord, int mezcs, int **ord_mezc);
 void mezcla(int pos_mezc, int fd_free_mezc, int fd_ord_mezc, int fd_mezc_esc);
-void escribe(int num_mezc, int fd_lec_esc, int **mezc_esc, char *salida);
+void escribe(int num_mezc, int fd_lec_esc, int **mezc_esc, char *path);
 
 /**
  * Función que crea los procesos ordenadores.
@@ -78,7 +78,7 @@ void ordena(
     int fd_ords, int fd_lec_ord, 
     int fd_mezcs, int **ord_mezc
 ) {
-    for (;;) {
+    while (1) {
         char *filename;
         int i, aux, size, mezc;
         sequence_t *sequence;
@@ -89,22 +89,26 @@ void ordena(
         /* Lee el tamaño del filename asignado */
         aux = read(fd_lec_ord, &size, sizeof(int));
         if (aux == -1) continue;
+
+        /* Si se cerró la pipe, ya no hay archivos por ordenar */
         if (aux == 0) break;
         
-        /* Guarda el filename */
+        /* Obtiene el filename recibido del lector */
         if (!(filename = malloc(size * sizeof(char)))) continue;
         if (size != read(fd_lec_ord, filename, size * sizeof(char))) {
             free(filename);
             continue;
         }
 
-        /* Extrae y ordena los números del archivo */
+        /* Extrae los números del archivo */
         if (!(sequence = extract_sequence(filename))) {
             free(filename);
             continue;
         }
-        selection_sort(sequence);
         free(filename);
+
+        /* Ordena la secuencia */ 
+        selection_sort(sequence);
 
         /* Toma un mezclador disponible */
         if ((aux = read(fd_mezcs, &mezc, sizeof(int))) == -1) {
@@ -189,7 +193,7 @@ void mezcla(int pos_mezc, int fd_mezcs, int fd_ord_mezc, int fd_mezc_esc) {
     int i, aux, size;
     sequence_t *sequence = create_sequence(0);
 
-    for (;;) {
+    while (1) {
         sequence_t *ord_seq, *mez_seq;
 
         /* Encolar mezclador como disponible */
@@ -198,6 +202,8 @@ void mezcla(int pos_mezc, int fd_mezcs, int fd_ord_mezc, int fd_mezc_esc) {
         /* Lee el tamaño de la secuencia */
         aux = read(fd_ord_mezc, &size, sizeof(int));
         if (aux == -1) continue;
+
+        /* Si cerraron la pipe, ya no hay secuencias que mezclar */
         if (aux == 0) break;
 
         /* Lee los números de la secuencia */
@@ -245,13 +251,13 @@ void mezcla(int pos_mezc, int fd_mezcs, int fd_ord_mezc, int fd_mezc_esc) {
  * - lec_ord: pipes de lector-ordenador (lector asigna archivos a ordenador).
  * - ord_mezc: pipes de ordenador-mezclador (ordenador pasa secuencias a mezclador).
  * - mezc_esc: pipes de mezclador-escritor (mezclador pasa secuencias a escritor).
- * - salida: archivo donde se escribirá el resultado.
+ * - path: archivo donde se escribirá el resultado.
  */
 void escritor(
     int num_ord, int num_mezc,
     int *ords, int *mezcs, int *lec_esc,
     int **lec_ord, int **ord_mezc, int **mezc_esc, 
-    char *salida
+    char *path
 ){
     int i, pid;
     if ((pid = fork()) == 0) {
@@ -269,7 +275,7 @@ void escritor(
         close(lec_esc[WRITE_END]);
         for (i = 0; i < num_mezc; i++) close(mezc_esc[i][WRITE_END]);
 
-        escribe(num_mezc, lec_esc[READ_END], mezc_esc, salida);
+        escribe(num_mezc, lec_esc[READ_END], mezc_esc, path);
 
         /* Cierra los extremos que se utilizaron de mezclador-escritor */
         close(lec_esc[READ_END]);
@@ -283,16 +289,15 @@ void escritor(
 }
 
 /**
- * Función que recibe secuencias de los mezcladores  
- * y las escribe en el archivo de salida. 
+ * Función que recibe secuencias de los mezcladores y las escribe en el archivo dado. 
  *
  * Parámetros:
  * - num_mezc: número de mezcladores.
  * - fd_lec_esc: fd de lectura de la pipe de lector-escritor.
  * - mezc_esc: pipes de mezclador-escritor (mezclador pasa secuencias a escritor).
- * - salida: archivo donde se escribirá el resultado.
+ * - path: archivo donde se escribirá el resultado.
  */
-void escribe(int num_mezc, int fd_lec_esc, int **mezc_esc, char *salida) {
+void escribe(int num_mezc, int fd_lec_esc, int **mezc_esc, char *path) {
     int aux, i;
 
     /* Apuntador de apuntadores de secuencias */
@@ -316,8 +321,8 @@ void escribe(int num_mezc, int fd_lec_esc, int **mezc_esc, char *salida) {
         }
     }
 
-    /* Escribe ordenado salida y libera la memoria */
-    write_sequence(sequences, num_mezc, salida);
+    /* Escribe ordenado en el archivo dado y libera la memoria */
+    write_sequence(sequences, num_mezc, path);
     for (i = 0; i < num_mezc; i++) free_sequence(sequences[i]);
     free(sequences);
 }
