@@ -48,7 +48,6 @@ int main(int argc, char *argv[]) {
  * - num_ord: número de ordenadores.
  * - num_mezc: número de mezcladores.
  * - salida: nombre del archivo de salida.
- *
  * Retorno:
  * - 0 si todo fue bien, -1 si hubo un error.
  */
@@ -125,13 +124,12 @@ int lector(char *raiz, int num_ord, int num_mezc, char *salida) {
 
 
 /**
- * Función que recorre recursivamente desde un directorio dado y ejecuta una función indicada.
- * 
+ * Función que recorre recursivamente desde un directorio dado y 
+ * asigna los archivos a ordenadores.
  * Parámetros:
- *      fun: función a ejecutar por cada archivo.
- *      args: argumentos de la función.
- *      action: indica si la función a ejecutar es para un directorio y/o un archivo
- *          (0 si es para regulares, 1 si es para directorios, 2 si es para ambos casos)
+ *      - path: directorio a recorrer.
+ *      - ords: pipe de ordenadores disponibles.
+ *      - lec_ord: pipes de lector-ordenador.
  * Retorno:
  *      0 si todo fue correcto, -1 si hubo un error durante la ejecución.
  */

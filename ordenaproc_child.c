@@ -62,16 +62,15 @@ void ordenador(
 }
 
 /**
- * Función que toma secuencias de un archivo dado en una pipe y las ordena.
- * Luego, pasa la secuencia ordenada a un mezclador disponible.
- * 
-* Parámetros:
-* - pos_ord: posición del ordenador en la lista de ordenadores.
-* - num_ord: número de ordenadores.
-* - fd_ords: fd de lectura de la pipe de ordenadores disponibles.
-* - fd_lec_ord: fd de lectura de las pipes de lector-ordenador.
-* - fd_mezcs: fd de escritura de la pipe de mezcladores disponibles.
-* - ord_mezc: pipes de ordenador-mezclador.
+ * Función que ordena las secuencias de archivos asignados por el lector y
+ * envía la secuencia ordenada a un mezclador disponible.
+ * Parámetros:
+ * - pos_ord: posición del ordenador en la lista de ordenadores.
+ * - num_ord: número de ordenadores.
+ * - fd_ords: fd de lectura de la pipe de ordenadores disponibles.
+ * - fd_lec_ord: fd de lectura de las pipes de lector-ordenador.
+ * - fd_mezcs: fd de escritura de la pipe de mezcladores disponibles.
+ * - ord_mezc: pipes de ordenador-mezclador.
  */
 void ordena(
     int pos_ord, int num_ord, 
@@ -180,9 +179,8 @@ void mezclador(
 }
 
 /**
- * Función que toma secuencias ordenadas de un ordenador y las mezcla.
- * Luego, pasa la secuencia mezclada al escritor.
- * 
+ * Función que mezcla las secuencias ordenadas de un ordenador y 
+ * envía la secuencia mezclada al escritor.
  * Parámetros:
  * - pos_mezc: posición del mezclador en la lista de mezcladores.
  * - fd_mezcs: fd de escritura de la pipe de mezcladores disponible.
@@ -289,8 +287,8 @@ void escritor(
 }
 
 /**
- * Función que recibe secuencias de los mezcladores y las escribe en el archivo dado. 
- *
+ * Función que recibe secuencias de los mezcladores y 
+ * las escribe en el archivo dado. 
  * Parámetros:
  * - num_mezc: número de mezcladores.
  * - fd_lec_esc: fd de lectura de la pipe de lector-escritor.

@@ -47,9 +47,9 @@ int main(int argc, char *argv[]) {
  *   - 0 si la ejecución fue exitosa. -1 en caso de error.
  */
 int lector(char *root, char *path) {
+    /* Ordena y mezcla las secuencias */
     sequence_t *sequence = create_sequence(0);
     if (!sequence) return -1;
-    /* Ordena y mezcla las secuencias */
     traverse_dir(root, sequence);
 
     /* Escribe la secuencia en el archivo dado */
