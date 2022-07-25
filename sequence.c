@@ -10,7 +10,8 @@
 #include "sequence.h"
 
 /**
- * Función que crea una nueva secuencia.
+ * Función que crea una nueva extructura secuencia. La secuencia está compuesta 
+ * por el tamaño de la secuencia y un apuntador a un arreglo de enteros.
  * Parámetros:
  * 		- size: tamaño de la secuencia.
  * Retorno:
@@ -59,7 +60,7 @@ sequence_t *extract_sequence(char *filename) {
 }
 
 /**
- * Función que ordena los enteros de una secuencia con Selection Sort.
+ * Función que ordena (creciente) los enteros de una secuencia con Selection Sort.
  * Parámetros:
  *      - sequence: apuntador de la secuencia.
  */
@@ -80,8 +81,8 @@ void selection_sort(sequence_t *sequence) {
 }
 
 /**
- * Función que mezcla dos secuencias ordenadas y guarda el resultado en una
- * nueva secuencia ordenada.
+ * Función que mezcla de manera ordenada dos secuencias ordenadas (creciente) 
+ * y guarda el resultado en una nueva secuencia ordenada.
  * Parámetros:
  *      sequence1: secuencia 1 a mezclar.
  *      sequence2: secuencia 2 a mezclar.
@@ -120,8 +121,8 @@ sequence_t *merge_sequence(sequence_t *sequence1, sequence_t *sequence2) {
 }
 
 /**
- * Función que recibe un arreglo de secuencias y escribe en un archivo los
- * enteros de cada una de ellas de forma ordenada.
+ * Función que recibe un arreglo de secuencias y escribe en un archivo 
+ * los enteros de cada una de las secuencias en forma ordenada (creciente).
  * Parámetros:
  *      sequences: arreglo de secuencias.
  *      num_seq: tamaño del arreglo (número de secuencias).
@@ -175,7 +176,7 @@ int write_sequence(sequence_t **sequences, int num_seq, char *path) {
 }
 
 /**
- * Función que libera la memoria de una secuencia.
+ * Función que libera la memoria asignada a una secuencia.
  * Parámetros:
  * 		- sequence: apuntador a la secuencia. 
  */
@@ -185,6 +186,11 @@ void free_sequence(sequence_t *sequence) {
     free(sequence);
 }
 
+/**
+ * Función que imprime los elementos de una secuencia.
+ * Parámetros:
+ * 		- sequence: apuntador a la secuencia. 
+ */
 void print_sequence(sequence_t *sequence) {
     int i;
     for (i = 0; i < sequence->size; i++) {

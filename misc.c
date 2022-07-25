@@ -45,7 +45,7 @@ int is_reg_file(char *path) {
 }  
 
 /**
- * Función que determina si un archivo es un archivo de texto.
+ * Función que determina si un archivo es un archivo de texto (.txt).
  * Parámetros:
  *      path: ruta del archivo.
  * Retorno:
@@ -58,7 +58,7 @@ int is_txt_file(char *path) {
 }
 
 /**
- * Función que verifica los argumentos de entrada.
+ * Función que verifica que los argumentos de entrada sean correctos.
  * Parámetros:
  *      argc: número de argumentos.
  *      argv: argumentos.

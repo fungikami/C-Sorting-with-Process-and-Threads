@@ -122,7 +122,6 @@ int lector(char *raiz, int num_ord, int num_mezc, char *salida) {
     return 0;
 }
 
-
 /**
  * Función que recorre recursivamente desde un directorio dado y 
  * asigna los archivos a ordenadores.

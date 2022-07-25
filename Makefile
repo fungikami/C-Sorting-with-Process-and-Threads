@@ -6,8 +6,8 @@ all: ordenaproc ordenahilo ordena
 ordenaproc: ordenaproc.o ordenaproc_child.c pipe_utils.o sequence.o misc.o
 	$(CC) $(CFLAGS) -o ordenaproc ordenaproc.o ordenaproc_child.c pipe_utils.o sequence.o misc.o
 
-ordenahilo: ordenahilo.o misc.o
-	$(CC) $(CFLAGS) -o ordenahilo ordenahilo.o misc.o
+ordenahilo: ordenahilo.o sequence.o misc.o
+	$(CC) $(CFLAGS) -o ordenahilo ordenahilo.o sequence.o misc.o
 
 ordena: ordena.o sequence.o misc.o
 	$(CC) $(CFLAGS) -o ordena ordena.o sequence.o misc.o

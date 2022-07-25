@@ -127,7 +127,7 @@ int escritor(sequence_t *sequence, char *path) {
 
 /**
  * Función que recorre recursivamente desde un directorio dado,
- * busca los archivos txt para ordenadarlos y guardarlos en una secuencia.
+ * busca los archivos txt para ordenarlos y guardarlos en una secuencia.
  * 
  * Parámetros:
  *   - path: ruta del directorio a recorrer.
