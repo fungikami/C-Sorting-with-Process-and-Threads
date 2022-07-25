@@ -1,6 +1,9 @@
 /**
  * ordenaproc_child.c
- * 
+ * Implementación de una aplicación que ordena de forma ascendente los enteros
+ * almacenados en los archivos ubicados en una jerarquía de directorios. 
+ * Para ello, se implementa los procesos cooperantes hijos del Lector: 
+ * Ordenadores, Mezcladores y Escritor.
  * 
  * Autor: Ka Fung (18-10492)
  * Fecha: 28/07/2022 
@@ -21,7 +24,10 @@ void mezcla(int pos_mezc, int fd_free_mezc, int fd_ord_mezc, int fd_mezc_esc);
 void escribe(int num_mezc, int fd_lec_esc, int **mezc_esc, char *path);
 
 /**
- * Función que crea los procesos ordenadores.
+ * Función que implementa los procesos ordenadores. Se encarga de:
+ * - Crear los procesos ordenadores.
+ * - Cerrar los pipes que no se utilizarán.
+ * - Llamar la función ordena, para que empiece a trabajar.
  *
  * Parámetros:
  * - num_ord: número de ordenadores.
@@ -62,8 +68,12 @@ void ordenador(
 }
 
 /**
- * Función que ordena las secuencias de archivos asignados por el lector y
- * envía la secuencia ordenada a un mezclador disponible.
+ * Función que implementa el trabajo del ordenador. Se encarga de:
+ * - Leer el archivo a ordenar.
+ * - Ordenar la secuencia con el algoritmo de selección.
+ * - Asigna la secuencia a un mezclador desocupado.
+ * - Espera otro archivo a ordenar o terminar.
+ *
  * Parámetros:
  * - pos_ord: posición del ordenador en la lista de ordenadores.
  * - num_ord: número de ordenadores.
@@ -132,7 +142,10 @@ void ordena(
 }
 
 /**
- * Función que crea los procesos mezcladores.
+ * Función que crea los procesos mezcladores. Se encarga de:
+ * - Crear los procesos mezcladores.
+ * - Cerrar los pipes que no se utilizarán.
+ * - Llamar la función mezcla, para que empiece a trabajar el mezclador.
  *
  * Parámetros:
  * - num_ord: número de ordenadores.
@@ -163,7 +176,8 @@ void mezclador(
             close_multiple_pipes(ord_mezc, num_mezc, i);
             close_multiple_pipes(mezc_esc, num_mezc, i);
 
-            mezcla(i, mezcs[WRITE_END], ord_mezc[i][READ_END], mezc_esc[i][WRITE_END]);
+            mezcla(i, mezcs[WRITE_END], ord_mezc[i][READ_END], 
+                    mezc_esc[i][WRITE_END]);
 
             /* Cierra los extremos que se utilizaron*/
             close(mezcs[WRITE_END]);
@@ -179,8 +193,12 @@ void mezclador(
 }
 
 /**
- * Función que mezcla las secuencias ordenadas de un ordenador y 
- * envía la secuencia mezclada al escritor.
+ * Función que implementa el trabajo del mezclador. Se encarga de:
+ * - Inicializa una secuencia vacía, que está ordenada.
+ * - Lee la secuencia a mezclar.
+ * - Mezcla la secuencia con la que ya tiene ordenada.
+ * - Espera hasta que el Lector le indique para enviar su secuencia a escritor.
+ *
  * Parámetros:
  * - pos_mezc: posición del mezclador en la lista de mezcladores.
  * - fd_mezcs: fd de escritura de la pipe de mezcladores disponible.
@@ -201,7 +219,8 @@ void mezcla(int pos_mezc, int fd_mezcs, int fd_ord_mezc, int fd_mezc_esc) {
         aux = read(fd_ord_mezc, &size, sizeof(int));
         if (aux == -1) continue;
 
-        /* Si cerraron la pipe, ya no hay secuencias que mezclar */
+        /* Si cerraron la pipe, ya no hay secuencias que mezclar,
+           empieza a pasar la secuencia al escritor */
         if (aux == 0) break;
 
         /* Lee los números de la secuencia */
@@ -224,7 +243,7 @@ void mezcla(int pos_mezc, int fd_mezcs, int fd_ord_mezc, int fd_mezc_esc) {
         sequence = mez_seq;
     }
 
-    /* Pasa el tamaño y la secuencia al escritor */
+    /* Pasa el tamaño de la secuencia y la secuencia al escritor */
     size = sequence->size;
     if ((aux = write(fd_mezc_esc, &size, sizeof(int))) == -1) {
         free_sequence(sequence);
@@ -239,7 +258,10 @@ void mezcla(int pos_mezc, int fd_mezcs, int fd_ord_mezc, int fd_mezc_esc) {
 }
 
 /**
- * Función qe crea el proceso escritor.
+ * Función que crea el proceso escritor. Se encarga de:
+ * - Crear el proceso escritor.
+ * - Cerrar los pipes que no se utilizarán.
+ * - Llamar la función escribe, para que empiece a trabajar el escritor.
  *
  * Parámetros:
  * - num_ord: número de ordenadores.
@@ -287,8 +309,11 @@ void escritor(
 }
 
 /**
- * Función que recibe secuencias de los mezcladores y 
- * las escribe en el archivo dado. 
+ * Función que implementa el trabajo del escritor. Se encarga de:
+ * - Recibe una secuencia por cada Mesclador.
+ * - Escribe la secuencia final en el archivo de salida, seleccionando 
+ *   el menor entero entre las secuencias.
+ *
  * Parámetros:
  * - num_mezc: número de mezcladores.
  * - fd_lec_esc: fd de lectura de la pipe de lector-escritor.

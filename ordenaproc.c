@@ -1,5 +1,9 @@
 /**
  * ordenaproc.c
+ * Implementación de una aplicación que ordena de forma ascendente los enteros
+ * almacenados en los archivos ubicados en una jerarquía de directorios. 
+ * Para ello, se crea el proceso Lector, que se encarga de crear los procesos 
+ * restantes (Ordenadores, Mezcladores y Escritor).
  * 
  * Autor: Ka Fung (18-10492)
  * Fecha: 28/07/2022 
@@ -19,39 +23,36 @@
 #define READ_END 0
 #define WRITE_END 1
 
-int lector(char *raiz, int num_ord, int num_mezc, char *salida);
+int lector(int num_ord, int num_mezc, char *raiz, char *salida);
 int traverse_dir(char *path, int *ord_lec, int **lec_ord);
 
 int main(int argc, char *argv[]) {
-    int num_ord, num_mezc;
-    char *raiz, *salida;
-
     /* Verifica los argumentos */
     if (verify_arguments(argc, argv) == -1) return -1;
 
-    num_ord = atoi(argv[1]);
-    num_mezc = atoi(argv[2]);
-    raiz = argv[3];
-    salida = argv[4];
-
     /* Invoca al lector */
-    if (lector(raiz, num_ord, num_mezc, salida) == -1) return -1;
+    if (lector(atoi(argv[1]), atoi(argv[2]), argv[3], argv[4]) == -1) return -1;
 
     return 0;
 }
 
 /**
- * Función que implementa el proceso Lector. 
+ * Función que implementa el proceso Lector. Se encarga de:
+ * - Crear los procesos restantes (ordenadores, mezcladores y escritor).
+ * - Crear los mecanismos de comunicación (pipes).
+ * - Asignar los archivos a un ordenador desocupado
+ * - Indicar a los mezcladores y escritores que realicen la mezcla y escritura. 
  *
  * Parámetros:
  * - raiz: directorio raiz del árbol de directorios a procesar.
  * - num_ord: número de ordenadores.
  * - num_mezc: número de mezcladores.
  * - salida: nombre del archivo de salida.
+ *
  * Retorno:
  * - 0 si todo fue bien, -1 si hubo un error.
  */
-int lector(char *raiz, int num_ord, int num_mezc, char *salida) {
+int lector(int num_ord, int num_mezc, char *raiz, char *salida) {
     int i;
     int ords[2], mezcs[2], lec_esc[2];
     int **lec_ord, **ord_mezc, **mezc_esc;
@@ -64,7 +65,7 @@ int lector(char *raiz, int num_ord, int num_mezc, char *salida) {
     if (pipe(mezcs) == -1) return -1;
     if (!(ord_mezc = initialize_multiple_pipes(num_mezc))) return -1;
 
-    /* Crea ordenadores */
+    /* Crea los ordenadores */
     ordenador(num_ord, num_mezc, ords, mezcs, lec_ord, ord_mezc);
 
     /* Crea pipes de mezclador-escritor y los mezcladores*/
@@ -100,10 +101,10 @@ int lector(char *raiz, int num_ord, int num_mezc, char *salida) {
     }
     close(ords[READ_END]);
 
-    /* Lee los mezcladores desocupados y cierra el pipe ordenador-mezclador*/
+    /* Lee los mezcladores desocupados y cierra el pipe ordenador-mezclador
+       para que empiece a pasar sus secuencias al escritor */
     for (i = 0; i < num_mezc; i++) {
         int mez;
-
         /* Encola el mezclador al escritor para mandar las secuencias */
         read(mezcs[READ_END], &mez, sizeof(int));
         write(lec_esc[WRITE_END], &mez, sizeof(int));
@@ -125,10 +126,12 @@ int lector(char *raiz, int num_ord, int num_mezc, char *salida) {
 /**
  * Función que recorre recursivamente desde un directorio dado y 
  * asigna los archivos a ordenadores.
+ *
  * Parámetros:
  *      - path: directorio a recorrer.
  *      - ords: pipe de ordenadores disponibles.
  *      - lec_ord: pipes de lector-ordenador.
+ *
  * Retorno:
  *      0 si todo fue correcto, -1 si hubo un error durante la ejecución.
  */

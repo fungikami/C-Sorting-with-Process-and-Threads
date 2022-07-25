@@ -1,6 +1,6 @@
 /**
  * ordena.c
- * Implementación monolítica del programa que ordene de forma ascendente los 
+ * Implementación monolítica del programa que ordena de forma ascendente los 
  * enteros almacenados en los archivos ubicados en una jerarquía de directorios.
  * 
  * Autor: Ka Fung (18-10492)
@@ -40,9 +40,13 @@ int main(int argc, char *argv[]) {
 
 /**
  * Función que implementa el lector.
+ * Recorre el árbol de directorios para ordenar las secuencias de los archivos
+ * txt encontrados, y lo mezcla en una sola secuencia ordenada.
+ * 
  * Parámetros:
  *   - root: ruta del directorio a leer las secuencias.
  *   - path: ruta del archivo a escribir la secuencia ordenada.
+ *
  * Retorno:
  *   - 0 si la ejecución fue exitosa. -1 en caso de error.
  */
@@ -64,8 +68,10 @@ int lector(char *root, char *path) {
 /**
  * Función que implementa el ordenador. 
  * Extrae la secuencia de un archivo y lo ordena con selection sort.
+ *
  * Parámetros:
  *   - path: ruta del archivo a leer.
+ *
  * Retorno:
  *   - Apuntador de la secuencia ordenada. NULL en caso de error.
  */
@@ -79,10 +85,12 @@ sequence_t *ordenador(char *path) {
 
 /**
  * Función que implementa el mezclador.
- * Mezcla dos secuencias y la asigna a la primera secuencia.
+ * Mezcla dos secuencias ordenadas en una secuencia ordenada.
+ *
  * Parámetros:
  *   - sequence1: Apuntador a la primera secuencia.
  *   - sequence2: Apuntador a la segunda secuencia.
+ *
  * Retorno:
  *   - 0 si la ejecución fue exitosa. -1 en caso de error.
  */
@@ -99,10 +107,12 @@ int mezclador(sequence_t **sequence1, sequence_t *sequence2) {
 
 /**
  * Función que implementa el escritor.
- * Escribe la secuencia en el archivo dado.
+ * Escribe la secuencia ordenada en el archivo dado.
+ *
  * Parámetros:
  *   - path: ruta del archivo a escribir.
  *   - sequence: Apuntador a la secuencia a escribir.
+ *
  * Retorno:
  *   - 0 si la ejecución fue exitosa. -1 en caso de error.
  */
@@ -132,6 +142,7 @@ int escritor(sequence_t *sequence, char *path) {
  * Parámetros:
  *   - path: ruta del directorio a recorrer.
  *   - sequence: Apuntador a la secuencia ordenada.
+ *
  * Retorno:
  *      0 si todo fue correcto, -1 si hubo un error durante la ejecución.
  */

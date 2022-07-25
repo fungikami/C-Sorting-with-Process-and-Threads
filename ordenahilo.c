@@ -1,5 +1,9 @@
 /**
  * ordenahilo.c
+ * Implementación de una aplicación que ordena de forma ascendente los enteros
+ * almacenados en los archivos ubicados en una jerarquía de directorios. 
+ * Para ello, se implementa con hilos cooperantes: un Lector, varios 
+ * Ordenadores, varios Mezcladores y un Escritor.
  * 
  * Autor: Ka Fung (18-10492)
  * Fecha: 28/07/2022 
@@ -23,26 +27,36 @@ sem_t sem_take_seq, sem_put_seq, sem_mezc, start_write_seq;
 void *ordenador(void *arg);
 void *mezclador(void *arg);
 void *escritor(void *arg);
-int lector(char *raiz, int num_ord, int num_mezc, char *salida);
+int lector(int num_ord, int num_mezc, char *raiz, char *salida);
 int traverse_dir(char *path);
 
 int main(int argc, char *argv[]) {
-    lector(argv[1], atoi(argv[2]), atoi(argv[3]), argv[4]);
+    /* Verificar argumentos */
+    if (verify_arguments(argc, argv) == -1) return -1;
+
+    /* Invoca al lector */
+    if (lector(atoi(argv[1]), atoi(argv[2]), argv[3], argv[4]) == -1) return -1;
+    
     return 0;
 }
 
 /**
- * Función que implementa el proceso Lector. 
+ * Función que implementa el proceso Lector. Se encarga de:
+ * - Crear los hilos restantes (ordenadores, mezcladores y escritor).
+ * - Crear los semáforos y mecanismos de comunicación.
+ * - Asignar los archivos a un ordenador desocupado
+ * - Indicar a los mezcladores y escritores que realicen la mezcla y escritura. 
  *
  * Parámetros:
  * - raiz: directorio raiz del árbol de directorios a procesar.
  * - num_ord: número de ordenadores.
  * - num_mezc: número de mezcladores.
  * - salida: nombre del archivo de salida.
+ *
  * Retorno:
  * - 0 si todo fue bien, -1 si hubo un error.
  */
-int lector(char *raiz, int num_ord, int num_mezc, char *salida) {
+int lector(int num_ord, int num_mezc, char *raiz, char *salida) {
     int i;
     void *ord_res, *mezc_res, *esc_res;
     int *pmezc = malloc(num_mezc * sizeof(int));
@@ -150,6 +164,16 @@ int lector(char *raiz, int num_ord, int num_mezc, char *salida) {
     return 0;
 }
 
+/**
+ * Función que implementa el ordenador. Se encarga de:
+ * - Leer el archivo a ordenar.
+ * - Ordenar la secuencia con el algoritmo de selección.
+ * - Asigna la secuencia a un mezclador desocupado.
+ * - Espera otro archivo a ordenar o terminar.
+ *
+ * Parámetros:
+ * - void *arg: no se utiliza los argumentos.
+ */
 void *ordenador(void *arg) {
     char *to_sort;
     while (1) {
@@ -187,7 +211,7 @@ void *ordenador(void *arg) {
         /* Región crítica: sólo un ordenador puede pasar la secuencia a un mezclador */
         sem_wait(&sem_sorted_seq);
 
-            /* Espera hasta que se pueda asignar la secuencia */
+            /* Espera un mezclador desocupado para asignar su secuencia */
             sem_wait(&sem_put_seq);
 
                 seq_to_merge = seq;
@@ -201,6 +225,16 @@ void *ordenador(void *arg) {
     pthread_exit(NULL);
 }
 
+/**
+ * Función que implementa el mezclador. Se encarga de:
+ * - Inicializa una secuencia vacía, que está ordenada.
+ * - Espera que se le asigne una secuencia a mezclar.
+ * - Mezcla la secuencia con la que ya tiene ordenada.
+ * - Espera hasta que el Lector le indique para enviar su secuencia a escritor.
+ *
+ * Parámetros:
+ * - arg: índice del mezclador en el arreglo de ids de hilos de mezclador.
+ */
 void *mezclador(void *arg) {
     int i = *(int *) arg;
 
@@ -246,6 +280,16 @@ void *mezclador(void *arg) {
     pthread_exit(NULL);
 }
 
+/**
+ * Función que implementa el escritor. Se encarga de:
+ * - Espera hasta que el Lector le indique para comenzar a escribir.
+ * - Recibe una secuencia por cada Mesclador.
+ * - Escribe la secuencia final en el archivo de salida, seleccionando 
+ *   el menor entero entre las secuencias.
+ *
+ * Parámetros:
+ * - void *arg: no se utiliza los argumentos.
+ */
 void *escritor(void *arg) {
     int i;
 
@@ -267,7 +311,7 @@ void *escritor(void *arg) {
  * 
  * Parámetros:
  *   - path: ruta del directorio a recorrer.
- *   - sequence: Apuntador a la secuencia ordenada.
+ *
  * Retorno:
  *      0 si todo fue correcto, -1 si hubo un error durante la ejecución.
  */
