@@ -74,7 +74,7 @@ int lector(int num_ord, int num_mezc, char *raiz, char *salida) {
 
     /* Inicializa los semáforos */
     sem_init(&sem_take_file, 0, 0);     /* Para tomar el archivo a ordenar */
-    sem_init(&sem_put_file, 0, 0);      /* Para asignar el archivo a ordenar */
+    sem_init(&sem_put_file, 0, 1);      /* Para asignar el archivo a ordenar */
     sem_init(&sem_ords, 0, 1);          /* Para exclusión mutua entre ords */
     sem_init(&sem_sorted_seq, 0, 1);    /* Para asignar la secuencia a mezclar */
     sem_init(&sem_mezc, 0, 1);          /* Para exclusión mutua entre mezc */
@@ -108,7 +108,8 @@ int lector(int num_ord, int num_mezc, char *raiz, char *salida) {
     /* Recorre el árbol de directorio y asigna el archivo a un ordenador */
     traverse_dir(raiz);
 
-    /* Indica al ordenador que no hay más archivos que ordenar */
+    /* Espera que tomen el último archivo, para indicar que no hay más */
+    sem_wait(&sem_put_file);
     file_to_sort = NULL;
     sem_post(&sem_take_file);
 
@@ -122,6 +123,7 @@ int lector(int num_ord, int num_mezc, char *raiz, char *salida) {
 
     /* Indica al mezclador que no hay más secuencias ordenadas por mezclar, 
        empieza a pasar las secuencias mezcladas al escritor */
+    sem_wait(&sem_put_seq);
     seq_to_merge = NULL;
     sem_post(&sem_take_seq);
 
@@ -156,7 +158,6 @@ int lector(int num_ord, int num_mezc, char *raiz, char *salida) {
     free(ord_ids);
     free(mezc_ids);
     free(pmezc);
-    free(seq_to_write);
     return 0;
 }
 
@@ -242,7 +243,6 @@ void *mezclador(void *arg) {
 
         /* Región crítica: sólo un mezclador puede tomar la secuencia a mezclar */
         sem_wait(&sem_mezc);
-
             /* Espera hasta que el ordenador pase una secuencia a mezclar */
             sem_wait(&sem_take_seq);
 
@@ -259,7 +259,7 @@ void *mezclador(void *arg) {
             /* Indica que ya tomó la secuencia a mezclar */          
             sem_post(&sem_put_seq);
         sem_post(&sem_mezc);
-
+        
         /* Mezcla la secuencia y libera la memoria asignada a las secuencias */
         if (!(new_seq = merge_sequence(sequence, to_merge))) {
             free(to_merge);
@@ -272,7 +272,6 @@ void *mezclador(void *arg) {
 
     /* Pasa la secuencia al escritor */
     seq_to_write[i] = sequence;
-
     pthread_exit(NULL);
 }
 
@@ -361,13 +360,13 @@ int traverse_dir(char *path) {
 
             /* Si es un archivo txt, ordena y mezcla la secuencia */
             if (is_reg && is_txt_file(new_path)) {
-
-                /* Permitir que un ordenador pueda tomar el archivo */
-                file_to_sort = new_path;
-                sem_post(&sem_take_file);
-
                 /* Esperar que pueda poner otro archivo */
                 sem_wait(&sem_put_file);
+
+                file_to_sort = new_path;
+                
+                /* Permitir que un ordenador pueda tomar el archivo */
+                sem_post(&sem_take_file);
             } else {
                 free(new_path);
             }
