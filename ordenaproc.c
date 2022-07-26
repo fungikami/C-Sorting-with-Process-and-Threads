@@ -152,6 +152,7 @@ int traverse_dir(char *path, int *ords, int **lec_ord) {
 
         /* Concatena la nueva direccion */
         char* new_path = malloc(sizeof(char) * (strlen(path) + strlen(e_name) + 2));
+        if (!new_path) continue;
         strcpy(new_path, path);
         strcat(new_path, "/");
         strcat(new_path, e_name);

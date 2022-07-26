@@ -18,7 +18,6 @@
 #include "misc.h"
 #include "sequence.h"
 
-int nm;
 char *output_file, *file_to_sort;
 sequence_t *seq_to_merge, **seq_to_write;
 sem_t sem_take_file, sem_put_file, sem_ords, sem_sorted_seq;
@@ -41,7 +40,7 @@ int main(int argc, char *argv[]) {
 }
 
 /**
- * Función que implementa el proceso Lector. Se encarga de:
+ * Función que implementa el lector. Se encarga de:
  * - Crear los hilos restantes (ordenadores, mezcladores y escritor).
  * - Crear los semáforos y mecanismos de comunicación.
  * - Asignar los archivos a un ordenador desocupado
@@ -58,26 +57,22 @@ int main(int argc, char *argv[]) {
  */
 int lector(int num_ord, int num_mezc, char *raiz, char *salida) {
     int i;
-    void *ord_res, *mezc_res, *esc_res;
-    int *pmezc = malloc(num_mezc * sizeof(int));
 
+    /* Hilos de Ordenadores, Mezcladores y Escritor */
     pthread_t *ord_ids = malloc(num_ord * sizeof(pthread_t));
     pthread_t *mezc_ids = malloc(num_mezc * sizeof(pthread_t));
     pthread_t esc_id;
+    int *pmezc = malloc(num_mezc * sizeof(int));
+    void *ord_res, *mezc_res, *esc_res;
 
-    if (!ord_ids || !mezc_ids) {
-        printf("Error al reservar memoria\n");
-        return -1;
-    }
+    if (!ord_ids || !mezc_ids || !pmezc) return -1;
 
-    nm = num_mezc;
+    /* Inicializa las variables globales */
     output_file = salida;
     seq_to_write = malloc(num_mezc * sizeof(sequence_t *));
-    if (!seq_to_write) {
-        printf("Error al reservar memoria\n");
-        return -1;
-    }
+    if (!seq_to_write) return -1;
 
+    /* Inicializa los semáforos */
     sem_init(&sem_take_file, 0, 0);     /* Para tomar el archivo a ordenar */
     sem_init(&sem_put_file, 0, 0);      /* Para asignar el archivo a ordenar */
     sem_init(&sem_ords, 0, 1);          /* Para exclusión mutua entre ords */
@@ -85,7 +80,7 @@ int lector(int num_ord, int num_mezc, char *raiz, char *salida) {
     sem_init(&sem_mezc, 0, 1);          /* Para exclusión mutua entre mezc */
     sem_init(&sem_take_seq, 0, 0);      /* Para tomar la secuencia a mezclar */
     sem_init(&sem_put_seq, 0, 1);       /* Para asignar la secuencia a mezclar */
-    sem_init(&start_write_seq, 0, 0);   /* Para que el escritor empiece */
+    sem_init(&start_write_seq, 0, 0);   /* Para que el escritor empiece a escribir */
 
     /* Creación de ordenadores */
     for (i = 0; i < num_ord; i++) {
@@ -105,7 +100,7 @@ int lector(int num_ord, int num_mezc, char *raiz, char *salida) {
     }
 
     /* Creación del escritor */
-    if (pthread_create(&esc_id, NULL, escritor, NULL)) {
+    if (pthread_create(&esc_id, NULL, escritor, &num_mezc)) {
         printf("Error al crear el hilo escritor\n");
         return -1;
     }
@@ -161,6 +156,7 @@ int lector(int num_ord, int num_mezc, char *raiz, char *salida) {
     free(ord_ids);
     free(mezc_ids);
     free(pmezc);
+    free(seq_to_write);
     return 0;
 }
 
@@ -288,17 +284,17 @@ void *mezclador(void *arg) {
  *   el menor entero entre las secuencias.
  *
  * Parámetros:
- * - void *arg: no se utiliza los argumentos.
+ * - arg: número de mezcladores.
  */
 void *escritor(void *arg) {
-    int i;
+    int i, num_mezc = *(int *) arg;
 
     /* Espera hasta que el lector le indique que va a comenzar a escribir */
     sem_wait(&start_write_seq);
-    write_sequence(seq_to_write, nm, output_file);
+    write_sequence(seq_to_write, num_mezc, output_file);
 
     /* Libera la memoria */
-    for (i = 0; i < nm; i++) free_sequence(seq_to_write[i]);
+    for (i = 0; i < num_mezc; i++) free_sequence(seq_to_write[i]);
     free(seq_to_write);
 
     pthread_exit(NULL);
@@ -332,6 +328,7 @@ int traverse_dir(char *path) {
 
         /* Concatena la nueva direccion */
         char* new_path = malloc(sizeof(char) * (strlen(path) + strlen(e_name) + 2));
+        if (!new_path) continue;
         strcpy(new_path, path);
         strcat(new_path, "/");
         strcat(new_path, e_name);

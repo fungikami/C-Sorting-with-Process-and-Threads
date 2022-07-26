@@ -36,21 +36,32 @@ sequence_t *create_sequence(int size) {
  */
 sequence_t *extract_sequence(char *filename) {
     sequence_t *sequence;
-    int64_t aux, *array = NULL;
+    int64_t aux, *array;
     int size = 0;
 
     FILE *file = fopen(filename, "r");
     if (!file) return NULL;
 
+    /* Reserva primero un arreglo de 100 enteros */
+    array = (int64_t *)malloc(sizeof(int64_t) * 100);
+
     /* Se lee el archivo y se guardan los enteros en un arreglo */
     while (fscanf(file, "%ld", &aux) != EOF) {
-        array = realloc(array, sizeof(int64_t) * (size + 1));
-        if (!array) return NULL;
         array[size] = aux;
         size++;
+
+        /* Si el arreglo está lleno, se re-reserva un arreglo mas grande */
+        if (size % 100 == 0) {
+            array = (int64_t *)realloc(array, sizeof(int64_t) * (size + 100));
+            if (!array) return NULL;
+        }
     }
     fclose(file);
 
+    /* Se ajusta el tamaño del arreglo */
+    array = (int64_t *)realloc(array, sizeof(int64_t) * size);
+    if (!array) return NULL;
+    
     /* Se crea la secuencia */
     sequence = malloc(sizeof(sequence_t));
     if (!sequence) return NULL;

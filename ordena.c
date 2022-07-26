@@ -14,11 +14,11 @@
 #include "misc.h"
 #include "sequence.h"
 
-sequence_t *ordenador(char *path);
 int lector(char *root, char *path);
-int mezclador(sequence_t **sequence1, sequence_t *sequence2);
+sequence_t *ordenador(char *path);
+sequence_t *mezclador(sequence_t *sequence1, sequence_t *sequence2);
 int escritor(sequence_t *sequence, char *path);
-int traverse_dir(char *path, sequence_t *sequence);
+int traverse_dir(char *path, sequence_t **sequence);
 
 int main(int argc, char *argv[]) {
     /* Verifica los argumentos */
@@ -54,7 +54,7 @@ int lector(char *root, char *path) {
     /* Ordena y mezcla las secuencias */
     sequence_t *sequence = create_sequence(0);
     if (!sequence) return -1;
-    traverse_dir(root, sequence);
+    traverse_dir(root, &sequence);
 
     /* Escribe la secuencia en el archivo dado */
     if (escritor(sequence, path) == -1) {
@@ -92,17 +92,16 @@ sequence_t *ordenador(char *path) {
  *   - sequence2: Apuntador a la segunda secuencia.
  *
  * Retorno:
- *   - 0 si la ejecución fue exitosa. -1 en caso de error.
+ *   - Apuntador de la mezcla si la ejecución fue exitosa. 
+ *   - NULL en caso de error.
  */
-int mezclador(sequence_t **sequence1, sequence_t *sequence2) {
-    sequence_t *mix_seq;
-    if (!(mix_seq = merge_sequence(*sequence1, sequence2))) return -1;
+sequence_t *mezclador(sequence_t *sequence1, sequence_t *sequence2) {
+    sequence_t *merge_seq;
+    if (!(merge_seq = merge_sequence(sequence1, sequence2))) return NULL;
     
-    free(*sequence1);
+    free(sequence1);
     free(sequence2);
-    *sequence1 = mix_seq;
-
-    return 0;
+    return merge_seq;
 }
 
 /**
@@ -146,7 +145,7 @@ int escritor(sequence_t *sequence, char *path) {
  * Retorno:
  *      0 si todo fue correcto, -1 si hubo un error durante la ejecución.
  */
-int traverse_dir(char *path, sequence_t *sequence) {
+int traverse_dir(char *path, sequence_t **sequence) {
     DIR *dir;
     struct dirent *ent;
 
@@ -163,6 +162,7 @@ int traverse_dir(char *path, sequence_t *sequence) {
 
         /* Concatena la nueva direccion */
         char* new_path = malloc(sizeof(char) * (strlen(path) + strlen(e_name) + 2));
+        if (!new_path) continue;
         strcpy(new_path, path);
         strcat(new_path, "/");
         strcat(new_path, e_name);
@@ -199,8 +199,10 @@ int traverse_dir(char *path, sequence_t *sequence) {
                     free(new_path);
                     continue;
                 }
-
-                if (mezclador(&sequence, sort_seq) == -1) {
+                
+                /* Actualiza la secuencia */
+                *sequence = mezclador(*sequence, sort_seq);
+                if (!*sequence) {
                     free(new_path);
                     continue;
                 }
