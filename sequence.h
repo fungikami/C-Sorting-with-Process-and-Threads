@@ -9,6 +9,11 @@
     #define __SEQUENCE_H__
     #include <stdint.h>
 
+    /**
+     * Estructura que representa una secuencia de enteros.
+     * Guarda un puntero de la secuencia y el número de 
+     * elementos de la secuencia.
+     */
     typedef struct {
         int64_t *data;
         int size;

@@ -1,9 +1,18 @@
 /**
  * ordenaproc.c
+ *
  * Implementación de una aplicación que ordena de forma ascendente los enteros
- * almacenados en los archivos ubicados en una jerarquía de directorios. 
- * Para ello, se crea el proceso Lector, que se encarga de crear los procesos 
- * restantes (Ordenadores, Mezcladores y Escritor).
+ * almacenados en los archivos ubicados en una jerarquía de directorios, con la
+ * creación de procesos cooperantes de un Lector: Ordenadores, Mezcladores y 
+ * Escritor.
+ *
+ * Comando:
+ *      ./ordenaproc <num Ordenadores> <num Mezcladores> <raiz> <archivo salida>
+ * donde:
+ *      <num Ordenadores>: número de procesos que ordenarán los enteros.
+ *      <num Mezcladores>: número de procesos que mezclarán secuencias ordenadas.
+ *      <raiz>: es el directorio raíz que se debe procesar.
+ *      <archivo salida>: nombre del archivo que almacenará los enteros ordenados.
  * 
  * Autor: Ka Fung (18-10492)
  * Fecha: 28/07/2022 
@@ -58,26 +67,35 @@ int lector(int num_ord, int num_mezc, char *raiz, char *salida) {
     int **lec_ord, **ord_mezc, **mezc_esc;
 
     /* Crea la pipe de ordenadores disponibles y pipes de lector-ordenador */
-    if (pipe(ords) == -1) return -1;
-    if (!(lec_ord = initialize_multiple_pipes(num_ord))) return -1;
+    if (pipe(ords) == -1 || !(lec_ord = initialize_multiple_pipes(num_ord))) {
+        fprintf(stderr, "Error al crear pipes de lector-ordenador\n");
+        return -1;
+    }
 
     /* Crea la pipe de mezcladores disponibles y pipes de ordenador-mezclador */
-    if (pipe(mezcs) == -1) return -1;
-    if (!(ord_mezc = initialize_multiple_pipes(num_mezc))) return -1;
+    if (pipe(mezcs) == -1 || !(ord_mezc = initialize_multiple_pipes(num_mezc))) {
+        fprintf(stderr, "Error al crear pipes de ordenador-mezclador\n");
+        return -1;
+    }
 
     /* Crea los ordenadores */
     ordenador(num_ord, num_mezc, ords, mezcs, lec_ord, ord_mezc);
 
     /* Crea pipes de mezclador-escritor y los mezcladores*/
-    if (!(mezc_esc = initialize_multiple_pipes(num_mezc))) return -1;
+    if (!(mezc_esc = initialize_multiple_pipes(num_mezc))) {
+        fprintf(stderr, "Error al crear pipes de mezclador-escritor\n");
+        return -1;
+    }
     mezclador(num_ord, num_mezc,ords, mezcs,lec_ord, ord_mezc, mezc_esc);
 
     /* Crea pipes de lector-escritor y el escritor*/
-    if (pipe(lec_esc) == -1) return -1;
+    if (pipe(lec_esc) == -1) {
+        fprintf(stderr, "Error al crear pipes de lector-escritor\n");
+        return -1;
+    }
     escritor(
-        num_ord, num_mezc, ords, mezcs, 
-        lec_esc, lec_ord, ord_mezc, mezc_esc, 
-        salida
+        num_ord, num_mezc, ords, mezcs, lec_esc, 
+        lec_ord, ord_mezc, mezc_esc, salida
     );
 
     /* Cierra los extremos a no utilizar de lector-ordenador y lector-escritor*/
@@ -93,7 +111,8 @@ int lector(int num_ord, int num_mezc, char *raiz, char *salida) {
     /* Recorre el directorio raíz y asigna los archivos a ordenadores */
     traverse_dir(raiz, ords, lec_ord);
 
-    /* Cierra extremo escritura de lector-ordenador (no archivos que asignar) */
+    /* No hay más archivos que asignar, cierra extremo escritura de 
+       lector-ordenador para que los ordenadores vayan terminando */
     for (i = 0; i < num_ord; i++) {
         int ord;
         read(ords[READ_END], &ord, sizeof(int));

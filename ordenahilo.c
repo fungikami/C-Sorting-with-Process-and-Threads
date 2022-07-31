@@ -1,9 +1,17 @@
 /**
  * ordenahilo.c
+ *
  * Implementación de una aplicación que ordena de forma ascendente los enteros
- * almacenados en los archivos ubicados en una jerarquía de directorios. 
- * Para ello, se implementa con hilos cooperantes: un Lector, varios 
- * Ordenadores, varios Mezcladores y un Escritor.
+ * almacenados en los archivos ubicados en una jerarquía de directorios, con la
+ * creación de hilos cooperantes de un Lector: Ordenadores, Mezcladores y Escritor.
+ *
+ * Comando:
+ *      ./ordenahilo <num Ordenadores> <num Mezcladores> <raiz> <archivo salida>
+ * donde:
+ *      <num Ordenadores>: número de hilos que ordenarán los enteros.
+ *      <num Mezcladores>: número de hilos que mezclarán secuencias ordenadas.
+ *      <raiz>: es el directorio raíz que se debe procesar.
+ *      <archivo salida>: nombre del archivo que almacenará los enteros ordenados.
  * 
  * Autor: Ka Fung (18-10492)
  * Fecha: 28/07/2022 
@@ -65,7 +73,10 @@ int lector(int num_ord, int num_mezc, char *raiz, char *salida) {
     int *pmezc = malloc(num_mezc * sizeof(int));
     void *ord_res, *mezc_res, *esc_res;
 
-    if (!ord_ids || !mezc_ids || !pmezc) return -1;
+    if (!ord_ids || !mezc_ids || !pmezc) {
+        fprintf(stderr, "Error al reservar memoria para los ids de los hilos.\n");
+        return -1;
+    }
 
     /* Inicializa las variables globales */
     output_file = salida;
@@ -75,9 +86,9 @@ int lector(int num_ord, int num_mezc, char *raiz, char *salida) {
     /* Inicializa los semáforos */
     sem_init(&sem_take_file, 0, 0);     /* Para tomar el archivo a ordenar */
     sem_init(&sem_put_file, 0, 1);      /* Para asignar el archivo a ordenar */
-    sem_init(&sem_ords, 0, 1);          /* Para exclusión mutua entre ords */
+    sem_init(&sem_ords, 0, 1);          /* Para exclusión entre ordenadoress */
     sem_init(&sem_sorted_seq, 0, 1);    /* Para asignar la secuencia a mezclar */
-    sem_init(&sem_mezc, 0, 1);          /* Para exclusión mutua entre mezc */
+    sem_init(&sem_mezc, 0, 1);          /* Para exclusión entre mezcladores */
     sem_init(&sem_take_seq, 0, 0);      /* Para tomar la secuencia a mezclar */
     sem_init(&sem_put_seq, 0, 1);       /* Para asignar la secuencia a mezclar */
     sem_init(&start_write_seq, 0, 0);   /* Para que el escritor empiece a escribir */
@@ -85,7 +96,7 @@ int lector(int num_ord, int num_mezc, char *raiz, char *salida) {
     /* Creación de ordenadores */
     for (i = 0; i < num_ord; i++) {
         if (pthread_create(&ord_ids[i], NULL, ordenador, NULL)) {
-            printf("Error al crear el hilo ordenador %d\n", i);
+            fprintf(stderr, "Error al crear el hilo ordenador %d.\n", i);
             return -1;
         }
     }
@@ -94,14 +105,14 @@ int lector(int num_ord, int num_mezc, char *raiz, char *salida) {
     for (i = 0; i < num_mezc; i++) {
         pmezc[i] = i;
         if (pthread_create(&mezc_ids[i], NULL, mezclador, &pmezc[i])) {
-            printf("Error al crear el hilo mezclador %d\n", i);
+            fprintf(stderr, "Error al crear el hilo mezclador %d.\n", i);
             return -1;
         }
     }
 
     /* Creación del escritor */
     if (pthread_create(&esc_id, NULL, escritor, &num_mezc)) {
-        printf("Error al crear el hilo escritor\n");
+        fprintf(stderr, "Error al crear el hilo escritor.\n");
         return -1;
     }
 
@@ -116,8 +127,8 @@ int lector(int num_ord, int num_mezc, char *raiz, char *salida) {
     /* Esperar que los ordenadores asignen sus secuencias a mezcladores */
     for (i = 0; i < num_ord; i++) {
         if (pthread_join(ord_ids[i], &ord_res) != 0) {
-            printf("Error al esperar por el hilo ordenador %d\n", i);
-            exit(1);
+            fprintf(stderr, "Error al esperar al hilo ordenador %d.\n", i);
+            return -1;
         }
     }
 
@@ -130,8 +141,8 @@ int lector(int num_ord, int num_mezc, char *raiz, char *salida) {
     /* Esperar que todos los mezcladores terminen de pasar su secuencia */
     for (i = 0; i < num_mezc; i++) {
         if (pthread_join(mezc_ids[i], &mezc_res) != 0) {
-            printf("Error al esperar por el hilo mezclador %d\n", i);
-            exit(1);
+            fprintf(stderr, "Error al esperar al hilo mezclador %d.\n", i);
+            return -1;
         }
     }
 
@@ -140,8 +151,8 @@ int lector(int num_ord, int num_mezc, char *raiz, char *salida) {
 
     /* Espera a que el escritor termine de escribir */
     if (pthread_join(esc_id, &esc_res) != 0) {
-        printf("Error al esperar por el hilo escritor\n");
-        exit(1);
+        fprintf(stderr, "Error al esperar al hilo escritor.\n");
+        return -1;
     }
 
     /* Cerrar los semáforos */
@@ -178,6 +189,7 @@ void *ordenador(void *arg) {
 
         /* Región crítica: sólo un ordenador puede tomar el archivo a ordenar */
         sem_wait(&sem_ords); 
+        
             /* Espera hasta que el lector pase un archivo a ordenar */
             sem_wait(&sem_take_file);
 
@@ -193,6 +205,7 @@ void *ordenador(void *arg) {
             
             /* Indica al lector que ya tomó el archivo a ordenar */
             sem_post(&sem_put_file);
+
         sem_post(&sem_ords);
 
         /* Extrae la secuencia y libera el nombre del archivo */
@@ -243,21 +256,23 @@ void *mezclador(void *arg) {
 
         /* Región crítica: sólo un mezclador puede tomar la secuencia a mezclar */
         sem_wait(&sem_mezc);
+
             /* Espera hasta que el ordenador pase una secuencia a mezclar */
             sem_wait(&sem_take_seq);
 
-                /* Termina el mezclador hasta que el lector le indique */
+                /* Si el lector le indica que debe pasar su secuencia al Escritor */
                 if (!seq_to_merge) {
                     sem_post(&sem_take_seq);
                     sem_post(&sem_mezc);
                     break;
                 }
                 
-                /* Toma la secuencia a mezclar */
+                /* Recibe la secuencia ordenada a mezclar */
                 to_merge = seq_to_merge; 
 
             /* Indica que ya tomó la secuencia a mezclar */          
             sem_post(&sem_put_seq);
+            
         sem_post(&sem_mezc);
         
         /* Mezcla la secuencia y libera la memoria asignada a las secuencias */
@@ -292,7 +307,7 @@ void *escritor(void *arg) {
     sem_wait(&start_write_seq);
     write_sequence(seq_to_write, num_mezc, output_file);
 
-    /* Libera la memoria */
+    /* Libera la memoria asignada a las secuencias mezcladas */
     for (i = 0; i < num_mezc; i++) free_sequence(seq_to_write[i]);
     free(seq_to_write);
 

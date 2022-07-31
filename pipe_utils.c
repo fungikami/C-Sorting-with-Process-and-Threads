@@ -1,7 +1,8 @@
 /**
  * pipe_utils.c
+ *
  * Implementación de diversas funciones que se harán uso durante el programa
- * para crear, cerrar y liberar pipes.
+ * de ordenaproc, para crear, cerrar y liberar arreglos de pipes.
  * 
  * Autor: Ka Fung (18-10492)
  * Fecha: 28/07/2022 

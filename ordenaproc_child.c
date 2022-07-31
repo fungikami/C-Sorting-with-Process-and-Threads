@@ -1,9 +1,8 @@
 /**
  * ordenaproc_child.c
- * Implementación de una aplicación que ordena de forma ascendente los enteros
- * almacenados en los archivos ubicados en una jerarquía de directorios. 
- * Para ello, se implementa los procesos cooperantes hijos del Lector: 
- * Ordenadores, Mezcladores y Escritor.
+ * Implementación de los procesos cooperantes hijos del Lector (Ordenadores, 
+ * Mezcladores y Escritor) de la aplicación que ordena de forma ascendente los 
+ * enteros almacenados en los archivos ubicados en una jerarquía de directorios. 
  * 
  * Autor: Ka Fung (18-10492)
  * Fecha: 28/07/2022 

@@ -1,6 +1,10 @@
 /**
  * sequence.c
  *
+ * Implementación de diversas funciones que se harán uso durante los programas
+ * para la creación, extracción de un archivo, ordenamiento y liberación de
+ * memoria asignada a una secuencia.
+ *
  * Autor: Ka Fung (18-10492)
  * Fecha: 28/07/2022 
  */

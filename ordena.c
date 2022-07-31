@@ -1,8 +1,15 @@
 /**
  * ordena.c
+ *
  * Implementación monolítica del programa que ordena de forma ascendente los 
  * enteros almacenados en los archivos ubicados en una jerarquía de directorios.
  * 
+ * Comando:
+ *      ./ordenahilo <raiz> <archivo salida>
+ * donde:
+ *      <raiz>: es el directorio raíz que se debe procesar.
+ *      <archivo salida>: nombre del archivo que almacenará los enteros ordenados.
+ *
  * Autor: Ka Fung (18-10492)
  * Fecha: 28/07/2022 
  */
@@ -33,6 +40,7 @@ int main(int argc, char *argv[]) {
         return -1;
     }
 
+    /* Invoca al lector */
     if (lector(argv[1], argv[2]) == -1) return -1;
 
     return 0;
