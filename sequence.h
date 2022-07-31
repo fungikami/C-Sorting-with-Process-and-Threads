@@ -11,8 +11,12 @@
 
     /**
      * Estructura que representa una secuencia de enteros.
-     * Guarda un puntero de la secuencia y el número de 
-     * elementos de la secuencia.
+     * Posee las funciones de crear, liberar, imprimir, ordenar, mezclar
+     * secuencias, como de extraer y escribir secuencias a un archivo.
+     *
+     * Atributos:
+     *      - data: puntero a un arreglo de enteros.
+     *      - size: número de elementos de la secuencia.
      */
     typedef struct {
         int64_t *data;

@@ -2,9 +2,11 @@
  * ordenaproc.c
  *
  * Implementación de una aplicación que ordena de forma ascendente los enteros
- * almacenados en los archivos ubicados en una jerarquía de directorios, con la
- * creación de procesos cooperantes de un Lector: Ordenadores, Mezcladores y 
- * Escritor.
+ * almacenados en los archivos txt ubicados en una jerarquía de directorios, 
+ * con la creación de procesos cooperantes de un Lector: 
+ *      - Ordenadores: Ordenan las secuencias de cada archivo.
+ *      - Mezcladores: Mezcla las secuencias ordenadas con otra secuencia ordenada.
+ *      - Escritor: Escribe la secuencias mezcladas en un archivo de salida.
  *
  * Comando:
  *      ./ordenaproc <num Ordenadores> <num Mezcladores> <raiz> <archivo salida>

@@ -1,8 +1,10 @@
 /**
  * ordenaproc_child.c
- * Implementación de los procesos cooperantes hijos del Lector (Ordenadores, 
- * Mezcladores y Escritor) de la aplicación que ordena de forma ascendente los 
- * enteros almacenados en los archivos ubicados en una jerarquía de directorios. 
+ *
+ * Implementación de los procesos cooperantes del Lector del programa ordenaproc:
+ *      - Ordenadores: Ordenan las secuencias de cada archivo.
+ *      - Mezcladores: Mezcla las secuencias ordenadas con otra secuencia ordenada.
+ *      - Escritor: Escribe la secuencias mezcladas en un archivo de salida. 
  * 
  * Autor: Ka Fung (18-10492)
  * Fecha: 28/07/2022 
@@ -124,7 +126,7 @@ void ordena(
             continue;
         }
 
-        /* Encola el tamaño y la secuencia */
+        /* Escribe el tamaño y la secuencia */
         size = sequence->size;
         if ((aux = write(ord_mezc[mezc][WRITE_END], &size, sizeof(int))) == -1) {
             free_sequence(sequence);
