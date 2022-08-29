@@ -32,7 +32,7 @@
 char *output_file, *file_to_sort;
 sequence_t *seq_to_merge, **seq_to_write;
 sem_t sem_take_file, sem_put_file, sem_ords, sem_sorted_seq;
-sem_t sem_take_seq, sem_put_seq, sem_mezc, start_write_seq;
+sem_t sem_take_seq, sem_put_seq, sem_mezc, sem_write;
 
 void *ordenador(void *arg);
 void *mezclador(void *arg);
@@ -86,15 +86,30 @@ int lector(int num_ord, int num_mezc, char *raiz, char *salida) {
     seq_to_write = malloc(num_mezc * sizeof(sequence_t *));
     if (!seq_to_write) return -1;
 
-    /* Inicializa los semáforos */
-    sem_init(&sem_take_file, 0, 0);     /* Para tomar el archivo a ordenar */
-    sem_init(&sem_put_file, 0, 1);      /* Para asignar el archivo a ordenar */
-    sem_init(&sem_ords, 0, 1);          /* Para exclusión entre ordenadoress */
-    sem_init(&sem_sorted_seq, 0, 1);    /* Para asignar la secuencia a mezclar */
-    sem_init(&sem_mezc, 0, 1);          /* Para exclusión entre mezcladores */
-    sem_init(&sem_take_seq, 0, 0);      /* Para tomar la secuencia a mezclar */
-    sem_init(&sem_put_seq, 0, 1);       /* Para asignar la secuencia a mezclar */
-    sem_init(&start_write_seq, 0, 0);   /* Para que el escritor empiece a escribir */
+    /* Inicializa los semáforos de lector - ordenador */
+    if (sem_init(&sem_take_file, 0, 0) == -1 || 
+        sem_init(&sem_put_file, 0, 1) == -1 ||
+        sem_init(&sem_ords, 0, 1) == -1
+    ) {
+        fprintf(stderr, "Error al inicializar los semáforos para lector - ordenador.\n");
+        return -1;
+    }    
+    
+    /* Inicializa los semáforos de ordenador - mezclador */
+    if (sem_init(&sem_sorted_seq, 0, 1) == -1 ||
+        sem_init(&sem_mezc, 0, 1) == -1 ||
+        sem_init(&sem_take_seq, 0, 0) == -1 ||
+        sem_init(&sem_put_seq, 0, 1) == -1
+    ) {
+        fprintf(stderr, "Error al inicializar los semáforos para ordenador - mezclador.\n");
+        return -1;
+    }
+
+    /* Inicializa los semáforos de lector - escritor */
+    if (sem_init(&sem_write, 0, 0) == -1) {
+        fprintf(stderr, "Error al inicializar los semáforos para lector - escritor.\n");
+        return -1;
+    }
 
     /* Creación de ordenadores */
     for (i = 0; i < num_ord; i++) {
@@ -123,9 +138,9 @@ int lector(int num_ord, int num_mezc, char *raiz, char *salida) {
     traverse_dir(raiz);
 
     /* Espera que tomen el último archivo, para indicar que no hay más */
-    sem_wait(&sem_put_file);
+    if (sem_wait(&sem_put_file) == -1) return -1;
     file_to_sort = NULL;
-    sem_post(&sem_take_file);
+    if (sem_post(&sem_take_file) == -1) return -1;
 
     /* Esperar que los ordenadores asignen sus secuencias a mezcladores */
     for (i = 0; i < num_ord; i++) {
@@ -137,9 +152,9 @@ int lector(int num_ord, int num_mezc, char *raiz, char *salida) {
 
     /* Indica al mezclador que no hay más secuencias ordenadas por mezclar, 
        empieza a pasar las secuencias mezcladas al escritor */
-    sem_wait(&sem_put_seq);
+    if (sem_wait(&sem_put_seq) == -1) return -1;
     seq_to_merge = NULL;
-    sem_post(&sem_take_seq);
+    if (sem_post(&sem_take_seq) == -1) return -1;
 
     /* Esperar que todos los mezcladores terminen de pasar su secuencia */
     for (i = 0; i < num_mezc; i++) {
@@ -150,7 +165,7 @@ int lector(int num_ord, int num_mezc, char *raiz, char *salida) {
     }
 
     /* Notifica al escritor que ya puede comenzar a escribir */
-    sem_post(&start_write_seq);
+    if (sem_post(&sem_write) == -1) return -1;
 
     /* Espera a que el escritor termine de escribir */
     if (pthread_join(esc_id, &esc_res) != 0) {
@@ -166,7 +181,7 @@ int lector(int num_ord, int num_mezc, char *raiz, char *salida) {
     sem_destroy(&sem_mezc);          
     sem_destroy(&sem_take_seq);      
     sem_destroy(&sem_put_seq);      
-    sem_destroy(&start_write_seq);
+    sem_destroy(&sem_write);
 
     /* Liberar la memoria asignada a los ids de los hilos */
     free(ord_ids);
@@ -307,7 +322,7 @@ void *escritor(void *arg) {
     int i, num_mezc = *(int *) arg;
 
     /* Espera hasta que el lector le indique que va a comenzar a escribir */
-    sem_wait(&start_write_seq);
+    sem_wait(&sem_write);
     write_sequence(seq_to_write, num_mezc, output_file);
 
     /* Libera la memoria asignada a las secuencias mezcladas */
